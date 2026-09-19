@@ -4,6 +4,16 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.5.0 - Subida Manual de QR, Rediseño de Vista Móvil y Corrección de PDF (Marzo 2026)
+
+### Hitos Principales
+- **Subida Manual de Códigos QR (JPG)**: Componente de carga manual asociado al ID del rack mediante el endpoint `/upload`.
+- **Rediseño de la Sección "App Móvil"**: Imagen QR ampliada al ancho completo del box (`w-full aspect-square`) con etiqueta inferior.
+- **Optimización de Exportación a PDF (Multi-página)**: Impresión automatizada de todos los expedientes en páginas A4 exactas sin páginas en blanco mediante eventos de impresión y CSS estricto.
+- **Simplificación de Interfaz**: Actualización de etiqueta a "Editor de Expediente".
+
+---
+
 ## v0.4.0 - Vista Resumen Uno a Uno y Vista Detalle de Electrónica de Red (Marzo 2026)
 
 ### Hitos Principales

@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import json
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, render_template_string, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 DB_PATH = "racks.db"
@@ -197,6 +197,30 @@ def save_data():
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
+
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    rack_id = request.form.get("rack_id") or (request.json and request.json.get("rack_id"))
+    
+    if 'file' in request.files:
+        file = request.files['file']
+        if file and file.filename != '':
+            os.makedirs("uploads", exist_ok=True)
+            safe_rack_id = "".join(c if c.isalnum() else "_" for c in (rack_id or "rack"))
+            filename = f"qr_{safe_rack_id}_{file.filename}"
+            filepath = os.path.join("uploads", filename)
+            file.save(filepath)
+            return jsonify({"status": "success", "url": f"/{filepath}"})
+            
+    if request.is_json and request.json.get("image"):
+        image_data = request.json.get("image")
+        return jsonify({"status": "success", "url": image_data})
+        
+    return jsonify({"error": "No file or image provided"}), 400
+
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    return send_from_directory("uploads", filename)
 
 if __name__ == "__main__":
     init_db()

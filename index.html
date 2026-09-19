@@ -12,6 +12,8 @@
                 background: white !important;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .no-print {
                 display: none !important;
@@ -21,9 +23,12 @@
                 page-break-inside: avoid;
                 box-shadow: none !important;
                 margin: 0 !important;
-                padding: 15mm !important;
-                width: 100% !important;
-                height: 100vh !important;
+                padding: 12mm !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
             }
             @page {
                 size: A4 portrait;
@@ -82,7 +87,7 @@
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
                 <h2 class="text-md font-bold text-slate-700 flex items-center space-x-2">
                     <i class="fa-solid fa-sliders text-blue-600"></i>
-                    <span>Editor de Expediente (<span id="rack-count">0</span> racks)</span>
+                    <span>Editor de Expediente</span>
                 </h2>
                 <div class="flex space-x-1">
                     <button onclick="app.prevRack()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 text-sm"><i class="fa-solid fa-chevron-left"></i></button>
@@ -385,7 +390,7 @@
                     technician: "Técnico Asignado",
                     frontPhoto: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=60",
                     rearPhoto: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&auto=format&fit=crop&q=60",
-                    qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://app.soportia.com/rack/" + newId,
+                    qrCode: "",
                     notes: "Inspección inicial y revisión de estado general.",
                     checklist: {
                         cabling: true,
@@ -487,8 +492,41 @@
                 }
             }
 
+            async handleUploadQR(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const rack = this.currentRack();
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('rack_id', rack.id);
+
+                    try {
+                        const response = await fetch('/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+                        if (result.status === 'success') {
+                            rack.qrCode = result.url;
+                            await this.saveAndRefresh();
+                        } else {
+                            alert('Error al subir QR: ' + (result.error || 'Desconocido'));
+                        }
+                    } catch (err) {
+                        console.error('Error uploading QR:', err);
+                        const reader = new FileReader();
+                        reader.onload = async (e) => {
+                            rack.qrCode = e.target.result;
+                            await this.saveAndRefresh();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+
             updateIndicators() {
-                document.getElementById('rack-count').innerText = this.state.racks.length;
+                const rackCountEl = document.getElementById('rack-count');
+                if (rackCountEl) rackCountEl.innerText = this.state.racks.length;
                 document.getElementById('current-rack-indicator').innerText = `${this.state.currentIndex + 1} / ${this.state.racks.length}`;
                 
                 const select = document.getElementById('rack-jump-select');
@@ -684,10 +722,14 @@
                             </div>
                         </div>
 
-                        <!-- QR Code -->
+                        <!-- QR Code Upload -->
                         <div class="border-t border-slate-200 pt-3">
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Código QR (URL App Móvil)</label>
-                            <input type="text" value="${rack.qrCode}" oninput="app.updateField('qrCode', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> Código QR (Imagen JPG)</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="file" accept="image/jpeg,image/*" onchange="app.handleUploadQR(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                ${rack.qrCode ? `<img src="${rack.qrCode}" class="w-10 h-10 object-contain border border-slate-200 rounded flex-shrink-0" alt="QR">` : ''}
+                            </div>
+                            <span class="text-[10px] text-slate-400 mt-0.5 block">Asociado al ID del rack: <span class="font-mono font-semibold">${rack.id}</span></span>
                         </div>
 
                         <!-- Notes -->
@@ -720,6 +762,20 @@
                         container.appendChild(this.createRackPageElement(rack, this.state.currentIndex, false));
                     }
                 }
+            }
+
+            renderAllRacksForPrint() {
+                const container = document.getElementById('racks-preview-container');
+                container.innerHTML = '';
+                this.state.racks.forEach((rack, idx) => {
+                    if (this.state.viewMode === 'detalle') {
+                        container.appendChild(this.createElectronicsDetailPageElement(rack, idx));
+                    } else if (this.state.viewMode === 'plantilla') {
+                        container.appendChild(this.createRackPageElement(rack, idx, true));
+                    } else {
+                        container.appendChild(this.createRackPageElement(rack, idx, false));
+                    }
+                });
             }
 
             renderPreviewSingle(index) {
@@ -987,13 +1043,13 @@
                             </div>
 
                             <!-- Column 3: QR Code -->
-                            <div class="flex flex-col space-y-1">
+                            <div class="flex flex-col">
                                 <span class="text-[10px] font-bold text-slate-700 block mb-0.5 truncate"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> App Móvil</span>
-                                <div class="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2 flex-grow">
-                                    <img src="${rack.qrCode}" class="w-14 h-14 object-contain flex-shrink-0" alt="Código QR App">
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-between flex-grow text-center">
+                                    ${rack.qrCode ? `<img src="${rack.qrCode}" class="w-full aspect-square object-contain rounded bg-white p-0.5 border border-slate-200 shadow-sm mb-1" alt="Código QR App">` : `<div class="w-full aspect-square bg-slate-200 rounded flex items-center justify-center text-[9px] text-slate-400 mb-1">Sin QR</div>`}
                                     <div class="text-[8px] text-slate-600 leading-tight">
                                         <span class="font-bold text-slate-800 block">Expediente</span>
-                                        Escanear app.
+                                        Escanear app
                                     </div>
                                 </div>
                             </div>
@@ -1040,6 +1096,12 @@
         }
 
         const app = new RackMaintenanceApp();
+        window.onbeforeprint = () => {
+            app.renderAllRacksForPrint();
+        };
+        window.onafterprint = () => {
+            app.renderPreview();
+        };
     </script>
 </body>
 </html>
