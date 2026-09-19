@@ -51,10 +51,13 @@
                     <i class="fa-solid fa-database"></i><span>SQLite Conectado</span>
                 </span>
                 <div class="flex items-center space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
-                    <button onclick="app.setMode(false)" id="btn-mode-db" class="px-2.5 py-1 rounded font-semibold transition bg-blue-600 text-white">
-                        <i class="fa-solid fa-database mr-1"></i> DB
+                    <button onclick="app.setViewMode('resumen')" id="btn-mode-resumen" class="px-2.5 py-1 rounded font-semibold transition bg-blue-600 text-white">
+                        <i class="fa-solid fa-book-open mr-1"></i> Resumen
                     </button>
-                    <button onclick="app.setMode(true)" id="btn-mode-tpl" class="px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white">
+                    <button onclick="app.setViewMode('detalle')" id="btn-mode-detalle" class="px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-microchip mr-1"></i> Detalle
+                    </button>
+                    <button onclick="app.setViewMode('plantilla')" id="btn-mode-tpl" class="px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white">
                         <i class="fa-solid fa-file-pen mr-1"></i> Plantilla
                     </button>
                 </div>
@@ -103,17 +106,27 @@
         </section>
 
         <!-- Right / Full Column: Live Preview & Printable Book Pages -->
-        <section class="lg:col-span-2 flex flex-col items-center space-y-8">
-            <div id="preview-mode-banner" class="no-print w-full flex justify-between items-center bg-blue-50 border border-blue-100 p-3 rounded-lg text-xs text-blue-800">
+        <section class="lg:col-span-2 flex flex-col items-center space-y-4">
+            <div id="preview-mode-banner" class="no-print w-full flex flex-wrap justify-between items-center bg-blue-50 border border-blue-100 p-3 rounded-lg text-xs text-blue-800 gap-2">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-database text-blue-600 text-sm"></i>
-                    <span id="preview-mode-text">Vista de Base de Datos SQLite (racks.db). Sincronizado con el servidor.</span>
+                    <span id="preview-mode-text">Vista de Base de Datos SQLite &bull; Rack uno por uno</span>
                 </div>
-                <span class="font-semibold" id="preview-page-indicator">Rack 1 de 1</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="app.prevRack()" class="bg-white border border-blue-200 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded font-semibold transition flex items-center space-x-1 shadow-sm">
+                        <i class="fa-solid fa-arrow-left"></i><span>Anterior</span>
+                    </button>
+                    <select id="rack-jump-select" onchange="app.jumpToRack(this.value)" class="bg-white border border-blue-300 text-blue-900 rounded px-2.5 py-1 font-semibold focus:outline-none shadow-sm">
+                        <!-- Options populated dynamically -->
+                    </select>
+                    <button onclick="app.nextRack()" class="bg-white border border-blue-200 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded font-semibold transition flex items-center space-x-1 shadow-sm">
+                        <span>Siguiente</span><i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
 
-            <div id="racks-preview-container" class="w-full flex flex-col items-center space-y-8">
-                <!-- Rendered rack pages will appear here -->
+            <div id="racks-preview-container" class="w-full flex flex-col items-center">
+                <!-- Rendered rack page will appear here -->
             </div>
         </section>
 
@@ -169,7 +182,7 @@
             constructor() {
                 this.state = {
                     currentIndex: 0,
-                    isTemplateMode: false,
+                    viewMode: 'resumen', // 'resumen', 'detalle', 'plantilla'
                     company: {
                         name: "Soportia IT - Infraestructura y Racks",
                         tagline: "Departamento de Mantenimiento y Certificación de Comunicaciones",
@@ -181,37 +194,71 @@
                 this.loadData();
             }
 
-            setMode(isTpl) {
-                this.state.isTemplateMode = isTpl;
+            setViewMode(mode) {
+                this.state.viewMode = mode;
                 this.renderPreview();
-                const btnDb = document.getElementById('btn-mode-db');
+                this.renderForm();
+                
+                const btnResumen = document.getElementById('btn-mode-resumen');
+                const btnDetalle = document.getElementById('btn-mode-detalle');
                 const btnTpl = document.getElementById('btn-mode-tpl');
                 const banner = document.getElementById('preview-mode-banner');
                 const bannerText = document.getElementById('preview-mode-text');
                 const bannerIcon = banner ? banner.querySelector('i') : null;
 
-                if (btnDb && btnTpl) {
-                    if (isTpl) {
-                        btnTpl.className = "px-2.5 py-1 rounded font-semibold transition bg-amber-600 text-white";
-                        btnDb.className = "px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white";
-                    } else {
-                        btnDb.className = "px-2.5 py-1 rounded font-semibold transition bg-blue-600 text-white";
-                        btnTpl.className = "px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white";
-                    }
-                }
+                if (btnResumen) btnResumen.className = "px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white";
+                if (btnDetalle) btnDetalle.className = "px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white";
+                if (btnTpl) btnTpl.className = "px-2.5 py-1 rounded font-medium transition text-slate-300 hover:text-white";
 
-                if (banner && bannerText && bannerIcon) {
-                    if (isTpl) {
-                        banner.className = "no-print w-full flex justify-between items-center bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-lg text-xs";
-                        bannerIcon.className = "fa-solid fa-file-pen text-amber-600 text-sm";
-                        bannerText.innerText = "Modo Plantilla de Campo: Checklist desmarcado y notas en blanco con líneas para anotación manual del técnico.";
-                    } else {
-                        banner.className = "no-print w-full flex justify-between items-center bg-blue-50 border border-blue-100 p-3 rounded-lg text-xs";
-                        bannerIcon.className = "fa-solid fa-database text-blue-600 text-sm";
-                        bannerText.innerText = "Vista de Base de Datos SQLite (racks.db). Sincronizado con el servidor.";
-                    }
+                if (mode === 'resumen') {
+                    if (btnResumen) btnResumen.className = "px-2.5 py-1 rounded font-semibold transition bg-blue-600 text-white";
+                    if (banner) banner.className = "no-print w-full flex flex-wrap justify-between items-center bg-blue-50 border border-blue-100 p-3 rounded-lg text-xs text-blue-800 gap-2";
+                    if (bannerIcon) bannerIcon.className = "fa-solid fa-book-open text-blue-600 text-sm";
+                    if (bannerText) bannerText.innerText = "Vista Resumen &bull; Base de Datos SQLite (Rack uno por uno)";
+                } else if (mode === 'detalle') {
+                    if (btnDetalle) btnDetalle.className = "px-2.5 py-1 rounded font-semibold transition bg-indigo-600 text-white";
+                    if (banner) banner.className = "no-print w-full flex flex-wrap justify-between items-center bg-indigo-50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900 gap-2";
+                    if (bannerIcon) bannerIcon.className = "fa-solid fa-microchip text-indigo-600 text-sm";
+                    if (bannerText) bannerText.innerText = "Vista Detalle &bull; Electrónica de Red (ID, Marca, Modelo, Nº Serie, MAC)";
+                } else if (mode === 'plantilla') {
+                    if (btnTpl) btnTpl.className = "px-2.5 py-1 rounded font-semibold transition bg-amber-600 text-white";
+                    if (banner) banner.className = "no-print w-full flex flex-wrap justify-between items-center bg-amber-50 border border-amber-200 text-amber-900 gap-2 p-3 rounded-lg text-xs";
+                    if (bannerIcon) bannerIcon.className = "fa-solid fa-file-pen text-amber-600 text-sm";
+                    if (bannerText) bannerText.innerText = "Modo Plantilla de Campo &bull; Checklist desmarcado y notas en blanco";
                 }
                 this.updateIndicators();
+            }
+
+            async addElectronic() {
+                const rack = this.currentRack();
+                if (!rack.electronics) rack.electronics = [];
+                rack.electronics.push({
+                    unit: "10",
+                    id: `DEV-0${rack.electronics.length + 1}`,
+                    name: "Nuevo Dispositivo de Red",
+                    brand: "Cisco",
+                    model: "Catalyst",
+                    serial: "S/N: XXXXX",
+                    mac: "00:00:00:00:00:00"
+                });
+                await this.saveAndRefresh();
+            }
+
+            async removeElectronic(idx) {
+                const rack = this.currentRack();
+                if (rack.electronics) {
+                    rack.electronics.splice(idx, 1);
+                    await this.saveAndRefresh();
+                }
+            }
+
+            async updateElectronicField(idx, field, val) {
+                const rack = this.currentRack();
+                if (rack.electronics && rack.electronics[idx]) {
+                    rack.electronics[idx][field] = val;
+                    await this.saveToDatabase();
+                    this.renderPreviewSingle(this.state.currentIndex);
+                }
             }
 
             async loadData() {
@@ -370,10 +417,18 @@
                 }
             }
 
+            jumpToRack(idx) {
+                this.state.currentIndex = parseInt(idx);
+                this.renderForm();
+                this.renderPreview();
+                this.updateIndicators();
+            }
+
             prevRack() {
                 if (this.state.currentIndex > 0) {
                     this.state.currentIndex--;
                     this.renderForm();
+                    this.renderPreview();
                     this.updateIndicators();
                 }
             }
@@ -382,6 +437,7 @@
                 if (this.state.currentIndex < this.state.racks.length - 1) {
                     this.state.currentIndex++;
                     this.renderForm();
+                    this.renderPreview();
                     this.updateIndicators();
                 }
             }
@@ -434,7 +490,18 @@
             updateIndicators() {
                 document.getElementById('rack-count').innerText = this.state.racks.length;
                 document.getElementById('current-rack-indicator').innerText = `${this.state.currentIndex + 1} / ${this.state.racks.length}`;
-                document.getElementById('preview-page-indicator').innerText = `Rack ${this.state.currentIndex + 1} de ${this.state.racks.length} (SQLite)`;
+                
+                const select = document.getElementById('rack-jump-select');
+                if (select) {
+                    select.innerHTML = '';
+                    this.state.racks.forEach((r, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = idx;
+                        opt.selected = (idx === this.state.currentIndex);
+                        opt.text = `${r.id} (${r.client})`;
+                        select.appendChild(opt);
+                    });
+                }
             }
 
             renderForm() {
@@ -443,7 +510,96 @@
                 if (this.state.racks.length === 0) return;
                 const rack = this.currentRack();
                 const container = document.getElementById('rack-form-container');
-                
+
+                if (this.state.viewMode === 'detalle') {
+                    let electronicsEditHtml = '';
+                    (rack.electronics || []).forEach((item, idx) => {
+                        electronicsEditHtml += `
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs">
+                                <div class="flex justify-between items-center pb-1 border-b border-slate-200">
+                                    <span class="font-bold text-slate-800">Dispositivo #${idx + 1}</span>
+                                    <button onclick="app.removeElectronic(${idx})" class="text-red-600 hover:text-red-800 text-xs px-1.5 py-0.5 rounded hover:bg-red-50"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Unidad (U)</label>
+                                        <input type="text" value="${item.unit || ''}" oninput="app.updateElectronicField(${idx}, 'unit', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">ID Dispositivo</label>
+                                        <input type="text" value="${item.id || ''}" oninput="app.updateElectronicField(${idx}, 'id', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Nombre del Equipo</label>
+                                    <input type="text" value="${item.name || ''}" oninput="app.updateElectronicField(${idx}, 'name', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Marca</label>
+                                        <input type="text" value="${item.brand || ''}" oninput="app.updateElectronicField(${idx}, 'brand', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Modelo</label>
+                                        <input type="text" value="${item.model || ''}" oninput="app.updateElectronicField(${idx}, 'model', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Nº de Serie</label>
+                                        <input type="text" value="${item.serial || ''}" oninput="app.updateElectronicField(${idx}, 'serial', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Dirección MAC</label>
+                                        <input type="text" value="${item.mac || ''}" oninput="app.updateElectronicField(${idx}, 'mac', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = `
+                        <div class="space-y-4">
+                            <!-- Rack Details -->
+                            <div class="space-y-3">
+                                <span class="text-xs font-bold text-indigo-700 block uppercase tracking-wider"><i class="fa-solid fa-microchip mr-1"></i> Editor Vista Detalle (Electrónica)</span>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Identificador (ID)</label>
+                                    <input type="text" value="${rack.id}" oninput="app.updateField('id', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Cliente / Área Interna</label>
+                                    <input type="text" value="${rack.client}" oninput="app.updateField('client', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ubicación Física</label>
+                                    <input type="text" value="${rack.location}" oninput="app.updateField('location', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Electronics Inventory Editor -->
+                            <div class="border-t border-slate-200 pt-3 space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-list text-indigo-600 mr-1"></i> Dispositivos de Red</label>
+                                    <button onclick="app.addElectronic()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition flex items-center space-x-1">
+                                        <i class="fa-solid fa-plus"></i><span>Añadir</span>
+                                    </button>
+                                </div>
+                                <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                    ${electronicsEditHtml}
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="border-t border-slate-200 pt-3">
+                                <label class="block text-xs font-semibold text-slate-600 mb-2">Observaciones Técnicas</label>
+                                <textarea rows="3" oninput="app.updateField('notes', this.value)" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">${rack.notes}</textarea>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
                 let unitsHtml = '';
                 for (let u = 42; u >= 1; u--) {
                     const val = (rack.units && rack.units[u]) ? rack.units[u] : '';
@@ -554,24 +710,143 @@
             renderPreview() {
                 const container = document.getElementById('racks-preview-container');
                 container.innerHTML = '';
-                this.state.racks.forEach((rack, index) => {
-                    container.appendChild(this.createRackPageElement(rack, index));
-                });
-            }
-
-            renderPreviewSingle(index) {
-                const container = document.getElementById('racks-preview-container');
-                const existingCard = container.children[index];
-                const rack = this.state.racks[index];
-                const newCard = this.createRackPageElement(rack, index);
-                if (existingCard) {
-                    container.replaceChild(newCard, existingCard);
-                } else {
-                    container.appendChild(newCard);
+                if (this.state.racks.length > 0) {
+                    const rack = this.currentRack();
+                    if (this.state.viewMode === 'detalle') {
+                        container.appendChild(this.createElectronicsDetailPageElement(rack, this.state.currentIndex));
+                    } else if (this.state.viewMode === 'plantilla') {
+                        container.appendChild(this.createRackPageElement(rack, this.state.currentIndex, true));
+                    } else {
+                        container.appendChild(this.createRackPageElement(rack, this.state.currentIndex, false));
+                    }
                 }
             }
 
-            createRackPageElement(rack, index) {
+            renderPreviewSingle(index) {
+                if (index === this.state.currentIndex) {
+                    this.renderPreview();
+                }
+            }
+
+            createElectronicsDetailPageElement(rack, index) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border`;
+                
+                let pageLogoHtml = '';
+                if (this.state.company.logoImage) {
+                    pageLogoHtml = `<img src="${this.state.company.logoImage}" class="w-full h-full object-cover">`;
+                } else {
+                    pageLogoHtml = `<span class="text-base">${this.state.company.name.substring(0, 3).toUpperCase()}</span>`;
+                }
+
+                let electronicsTableRows = '';
+                const electronics = rack.electronics || [];
+                if (electronics.length === 0) {
+                    electronicsTableRows = `<tr><td colspan="7" class="text-center py-6 text-slate-400 italic text-xs">No hay dispositivos de electrónica de red registrados en este rack.</td></tr>`;
+                } else {
+                    electronics.forEach((item, idx) => {
+                        electronicsTableRows += `
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 text-[11px]">
+                                <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${item.unit || '-'}U</td>
+                                <td class="py-2.5 px-3 font-mono font-semibold text-indigo-900">${item.id || '-'}</td>
+                                <td class="py-2.5 px-3 font-medium text-slate-800">${item.name || '-'}</td>
+                                <td class="py-2.5 px-3 text-slate-700">${item.brand || '-'}</td>
+                                <td class="py-2.5 px-3 text-slate-700">${item.model || '-'}</td>
+                                <td class="py-2.5 px-3 font-mono text-slate-600">${item.serial || '-'}</td>
+                                <td class="py-2.5 px-3 font-mono text-slate-600">${item.mac || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                pageDiv.innerHTML = `
+                    <div>
+                        <!-- Header -->
+                        <header class="flex justify-between items-center pb-3 border-b-2 border-slate-900 mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-11 h-11 bg-slate-900 text-white font-black flex items-center justify-center rounded-lg overflow-hidden shadow-inner">
+                                    ${pageLogoHtml}
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">${this.state.company.name}</h2>
+                                    <p class="text-[10px] text-slate-500">${this.state.company.tagline} &bull; <span class="text-indigo-700 font-bold">VISTA DETALLE &bull; ELECTRÓNICA DE RED</span></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-indigo-900 text-white text-xs font-mono font-bold px-3 py-1 rounded">
+                                    ${rack.id}
+                                </span>
+                                <p class="text-[10px] text-slate-500 mt-1">Fecha: ${rack.date}</p>
+                            </div>
+                        </header>
+
+                        <!-- Rack Metadata Bar -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block uppercase">Cliente / Área</span>
+                                <span class="font-bold text-slate-800">${rack.client}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block uppercase">Ubicación Física</span>
+                                <span class="text-slate-800">${rack.location}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block uppercase">Técnico Responsable</span>
+                                <span class="text-slate-800">${rack.technician}</span>
+                            </div>
+                        </div>
+
+                        <!-- Electronics Table Title -->
+                        <div class="mb-3 flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fa-solid fa-microchip text-indigo-600"></i>
+                                <span>Inventario Detallado de Electrónica de Red (${electronics.length} dispositivos)</span>
+                            </h3>
+                        </div>
+
+                        <!-- Electronics Table -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden mb-6 shadow-sm bg-white">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900 text-white text-[10px] uppercase tracking-wider">
+                                        <th class="py-2.5 px-3 font-semibold">U</th>
+                                        <th class="py-2.5 px-3 font-semibold">ID</th>
+                                        <th class="py-2.5 px-3 font-semibold">Dispositivo</th>
+                                        <th class="py-2.5 px-3 font-semibold">Marca</th>
+                                        <th class="py-2.5 px-3 font-semibold">Modelo</th>
+                                        <th class="py-2.5 px-3 font-semibold">Nº Serie</th>
+                                        <th class="py-2.5 px-3 font-semibold">Dirección MAC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${electronicsTableRows}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="border border-slate-200 rounded-lg p-3 bg-slate-50/50 mb-4">
+                            <h3 class="text-[10px] font-bold text-slate-700 mb-1 flex items-center">
+                                <i class="fa-solid fa-clipboard-user mr-1 text-indigo-600"></i> Observaciones Técnicas de Red
+                            </h3>
+                            <p class="text-[10px] text-slate-600 leading-relaxed min-h-[40px] whitespace-pre-wrap">${rack.notes || 'Sin observaciones registradas.'}</p>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <footer class="pt-3 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500">
+                        <div>
+                            <span>${this.state.company.name} &bull; ${this.state.company.tagline}</span>
+                        </div>
+                        <div>
+                            <span>Vista Detalle &bull; Página ${index + 1} de ${this.state.racks.length}</span>
+                        </div>
+                    </footer>
+                `;
+                return pageDiv;
+            }
+
+            createRackPageElement(rack, index, isTpl) {
                 const pageDiv = document.createElement('div');
                 pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border ${index === this.state.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
                 
@@ -597,10 +872,10 @@
                 }
                 schemaHtml += '</div>';
 
-                const isTpl = this.state.isTemplateMode;
+                const isTemplate = (isTpl !== undefined) ? isTpl : (this.state.viewMode === 'plantilla');
                 const chk = rack.checklist || {};
                 const renderCheck = (val, label) => {
-                    if (isTpl) {
+                    if (isTemplate) {
                         return `
                             <div class="flex items-center space-x-1.5 text-[10px]">
                                 <span class="w-3.5 h-3.5 rounded border border-slate-400 bg-white flex items-center justify-center"></span>

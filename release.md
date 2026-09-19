@@ -4,6 +4,14 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.4.0 - Vista Resumen Uno a Uno y Vista Detalle de Electrónica de Red (Marzo 2026)
+
+### Hitos Principales
+- **Renombramiento a Vista Resumen**: Presentación de expedientes de racks de forma individual (uno a uno), eliminando el desplazamiento vertical continuo de múltiples páginas.
+- **Selector y Botones de Navegación DB**: Adición de botones de avance/retroceso y menú desplegable selector para saltar ágilmente entre los diferentes racks de la base de datos SQLite.
+- **Creación de Vista Detalle de Electrónica de Red**: Ficha dedicada para inventario y detalle de componentes de red en el rack activo, incluyendo ID, Marca, Modelo, Número de Serie y Dirección MAC.
+- **Consistencia de Marca**: Preservación de la cabecera corporativa y pie de página en ambas vistas.
+
 ## v0.3.0 - Rediseño de Vistas Fotográficas y Esquema de Rack 42U por Columnas (Marzo 2026)
 
 ### Hitos Principales

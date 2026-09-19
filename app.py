@@ -35,9 +35,14 @@ def init_db():
             notes TEXT,
             checklist TEXT,
             units TEXT,
+            electronics TEXT,
             sort_order INTEGER
         )
     """)
+    try:
+        cursor.execute("ALTER TABLE racks ADD COLUMN electronics TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     # Seed default company if empty
     cursor.execute("SELECT COUNT(*) FROM company")
@@ -73,9 +78,15 @@ def init_db():
             "labeling": True,
             "grounding": True
         })
+        default_electronics = json.dumps([
+            {"unit": "38", "id": "SW-CORE-01", "name": "Switch Core Cisco Catalyst 9300", "brand": "Cisco", "model": "Catalyst 9300", "serial": "FOC2548X92A", "mac": "00:1A:2B:3C:4D:5E"},
+            {"unit": "37", "id": "SW-DIST-01", "name": "Switch Distribución Planta 1", "brand": "Cisco", "model": "Catalyst 3850", "serial": "FCW2310L014", "mac": "00:1A:2B:3C:4D:5F"},
+            {"unit": "36", "id": "RT-PERI-01", "name": "Router Perimetral BGP", "brand": "Cisco", "model": "ISR 4331", "serial": "FTX2412058B", "mac": "00:1A:2B:3C:4D:60"},
+            {"unit": "35", "id": "FW-UTM-01", "name": "Firewall UTM Fortinet 200F", "brand": "Fortinet", "model": "FortiGate 200F", "serial": "FG200F3Z21001234", "mac": "90:6C:AC:12:34:56"}
+        ])
         cursor.execute("""
-            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, electronics, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             "RACK-HQ-01",
             "Sede Central - Centro de Datos",
@@ -88,6 +99,7 @@ def init_db():
             "Mantenimiento preventivo trimestral completado con éxito. Sustitución de ventiladores en switch core y revisión termográfica sin incidencias.",
             default_chk,
             default_units,
+            default_electronics,
             0
         ))
         
@@ -129,7 +141,8 @@ def get_data():
             "qrCode": row["qr_code"],
             "notes": row["notes"],
             "checklist": json.loads(row["checklist"]) if row["checklist"] else {},
-            "units": json.loads(row["units"]) if row["units"] else {}
+            "units": json.loads(row["units"]) if row["units"] else {},
+            "electronics": json.loads(row["electronics"]) if "electronics" in row.keys() and row["electronics"] else []
         })
         
     conn.close()
@@ -163,8 +176,8 @@ def save_data():
     cursor.execute("DELETE FROM racks")
     for idx, rack in enumerate(racks):
         cursor.execute("""
-            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, electronics, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             rack.get("id"),
             rack.get("client"),
@@ -177,6 +190,7 @@ def save_data():
             rack.get("notes"),
             json.dumps(rack.get("checklist", {})),
             json.dumps(rack.get("units", {})),
+            json.dumps(rack.get("electronics", [])),
             idx
         ))
         
