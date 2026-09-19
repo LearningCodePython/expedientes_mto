@@ -4,6 +4,16 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.2.0 - Modo Plantilla de Campo y Diferenciación DB / PDF (Marzo 2026)
+
+### Hitos Principales
+- **Selector de Modo (DB vs Plantilla de Campo)**: Interfaz en la barra superior para alternar entre la vista de registros de base de datos y la plantilla de campo para trabajos in situ.
+- **Plantilla de Campo para Anotaciones Manuales**:
+  - Checklist de verificación con casillas desmarcadas listas para marcar a mano.
+  - Sección de notas y observaciones del técnico en blanco con líneas horizontales punteadas hasta el final de la página.
+  - Campos de fecha y técnico en blanco para registro manuscrito.
+- **Combinación de Inventario y Relleno de Campo**: Conserva el esquema de 42U del rack desde la base de datos para que el técnico conozca los equipos instalados al llegar a la ubicación.
+
 ## v0.1.0 - Versión Operativa Inicial con Backend SQLite (Marzo 2026)
 
 ### Hitos Principales
