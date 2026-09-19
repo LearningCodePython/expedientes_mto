@@ -575,17 +575,21 @@
                 const pageDiv = document.createElement('div');
                 pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border ${index === this.state.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
                 
-                let schemaHtml = '';
+                let schemaHtml = '<div class="grid grid-cols-6 gap-1">';
                 for (let u = 42; u >= 1; u--) {
                     const equipment = rack.units && rack.units[u] ? rack.units[u] : '';
                     const hasEq = equipment.trim() !== '';
                     schemaHtml += `
-                        <div class="flex items-center text-[9px] border-b border-slate-100 py-[1.5px] ${hasEq ? 'bg-blue-50/60 font-medium text-slate-900' : 'text-slate-400'}">
-                            <span class="w-7 text-right pr-2 font-mono text-slate-500 border-r border-slate-200">${u}</span>
-                            <span class="pl-2 truncate">${hasEq ? equipment : '<span class="italic text-slate-300">Unidad libre</span>'}</span>
+                        <div class="border border-slate-200 rounded p-1 text-[8px] bg-slate-50 ${hasEq ? 'bg-blue-50/70 border-blue-200 font-medium text-slate-900' : 'text-slate-400'}">
+                            <div class="font-bold text-[9px] text-slate-600 border-b border-slate-200 pb-0.5 mb-0.5 flex justify-between">
+                                <span>U${u}</span>
+                                <span>${hasEq ? '●' : '○'}</span>
+                            </div>
+                            <div class="truncate" title="${equipment}">${hasEq ? equipment : '<span class="italic text-slate-300">Libre</span>'}</div>
                         </div>
                     `;
                 }
+                schemaHtml += '</div>';
 
                 const isTpl = this.state.isTemplateMode;
                 const chk = rack.checklist || {};
@@ -683,7 +687,7 @@
                             </div>
                         </div>
 
-                        <!-- Main Content Grid -->
+                        <!-- Top Sections Grid (Front Photo, Rear Photo, QR, Verificación) -->
                         <div class="grid grid-cols-4 gap-3 mb-3">
                             <!-- Column 1: Front Photo -->
                             <div>
@@ -701,26 +705,22 @@
                                 </div>
                             </div>
 
-                            <!-- Column 3: 42U Rack Schema -->
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-700 block mb-0.5 truncate"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema (42U)</span>
-                                <div class="bg-white border border-slate-300 rounded-lg flex-grow overflow-y-auto max-h-[220px] p-1 shadow-inner">
-                                    ${schemaHtml}
+                            <!-- Column 3: QR Code -->
+                            <div class="flex flex-col space-y-1">
+                                <span class="text-[10px] font-bold text-slate-700 block mb-0.5 truncate"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> App Móvil</span>
+                                <div class="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2 flex-grow">
+                                    <img src="${rack.qrCode}" class="w-14 h-14 object-contain flex-shrink-0" alt="Código QR App">
+                                    <div class="text-[8px] text-slate-600 leading-tight">
+                                        <span class="font-bold text-slate-800 block">Expediente</span>
+                                        Escanear app.
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Column 4: QR & Checklist -->
-                            <div class="flex flex-col space-y-2">
-                                <div class="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1.5">
-                                    <img src="${rack.qrCode}" class="w-12 h-12 object-contain flex-shrink-0" alt="Código QR App">
-                                    <div class="text-[8px] text-slate-600 leading-tight">
-                                        <span class="font-bold text-slate-800 block">App Móvil</span>
-                                        Expediente.
-                                    </div>
-                                </div>
-
-                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 flex flex-col justify-between flex-grow">
-                                    <span class="text-[10px] font-bold text-slate-800 block mb-1 border-b border-slate-200 pb-0.5">Verificación</span>
+                            <!-- Column 4: Verification Checklist -->
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-bold text-slate-700 block mb-0.5 truncate"><i class="fa-solid fa-list-check mr-1 text-blue-600"></i> Verificación</span>
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 flex flex-col justify-between flex-grow">
                                     <div class="space-y-1">
                                         ${renderCheck(chk.cabling, 'Cableado')}
                                         ${renderCheck(chk.power, 'Alimentación')}
@@ -729,6 +729,14 @@
                                         ${renderCheck(chk.grounding, 'Puesta tierra')}
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Section: 42U Rack Schema (Horizontal 6 Columns) -->
+                        <div class="mb-3">
+                            <span class="text-[10px] font-bold text-slate-700 block mb-1"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema del Rack (42U - Horizontal)</span>
+                            <div class="bg-white border border-slate-300 rounded-lg p-2 shadow-inner">
+                                ${schemaHtml}
                             </div>
                         </div>
 
