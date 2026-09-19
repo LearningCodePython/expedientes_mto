@@ -1,0 +1,189 @@
+import os
+import sqlite3
+import json
+from flask import Flask, render_template_string, request, jsonify
+
+app = Flask(__name__)
+DB_PATH = "racks.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Table for company configuration
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS company (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            name TEXT,
+            tagline TEXT,
+            logo_image TEXT,
+            logo_text TEXT
+        )
+    """)
+    
+    # Table for racks
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS racks (
+            rack_id TEXT PRIMARY KEY,
+            client TEXT,
+            location TEXT,
+            date TEXT,
+            technician TEXT,
+            front_photo TEXT,
+            rear_photo TEXT,
+            qr_code TEXT,
+            notes TEXT,
+            checklist TEXT,
+            units TEXT,
+            sort_order INTEGER
+        )
+    """)
+    
+    # Seed default company if empty
+    cursor.execute("SELECT COUNT(*) FROM company")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO company (id, name, tagline, logo_image, logo_text)
+            VALUES (1, 'Soportia IT - Infraestructura y Racks', 'Departamento de Mantenimiento y Certificación de Comunicaciones', NULL, 'SOP')
+        """)
+        
+    # Seed default rack if empty
+    cursor.execute("SELECT COUNT(*) FROM racks")
+    if cursor.fetchone()[0] == 0:
+        default_units = json.dumps({
+            "42": "Patch Panel Fibra Óptica (Core)",
+            "41": "Patch Panel Cat6A (Puestos 1-24)",
+            "40": "Patch Panel Cat6A (Puestos 25-48)",
+            "39": "Organizador de Cables 1U",
+            "38": "Switch Core Cisco Catalyst 9300",
+            "37": "Switch Distribución Planta 1",
+            "36": "Router Perimetral BGP",
+            "35": "Firewall UTM Fortinet 200F",
+            "20": "Servidor Rack Dell PowerEdge R750",
+            "19": "Servidor Rack Dell PowerEdge R740",
+            "18": "Cabina de Almacenamiento NAS Synology",
+            "5": "SAI / UPS APC Smart-RT 3000VA (Batería Principal)",
+            "4": "SAI / UPS APC Smart-RT 3000VA (Módulo Extensión)",
+            "1": "Bandeja de Accesorios y Puesta a Tierra General"
+        })
+        default_chk = json.dumps({
+            "cabling": True,
+            "power": True,
+            "temperature": True,
+            "labeling": True,
+            "grounding": True
+        })
+        cursor.execute("""
+            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "RACK-HQ-01",
+            "Sede Central - Centro de Datos",
+            "Sala Servidores Principal - Rack 01 (Fila A)",
+            "2026-09-19",
+            "Carlos Mendoza (Ing. Soporte)",
+            "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=60",
+            "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&auto=format&fit=crop&q=60",
+            "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://app.soportia.com/rack/RACK-HQ-01",
+            "Mantenimiento preventivo trimestral completado con éxito. Sustitución de ventiladores en switch core y revisión termográfica sin incidencias.",
+            default_chk,
+            default_units,
+            0
+        ))
+        
+    conn.commit()
+    conn.close()
+
+@app.route("/")
+def index():
+    with open("index.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.route("/api/data", methods=["GET"])
+def get_data():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name, tagline, logo_image, logo_text FROM company WHERE id = 1")
+    comp_row = cursor.fetchone()
+    company = {
+        "name": comp_row["name"],
+        "tagline": comp_row["tagline"],
+        "logoImage": comp_row["logo_image"],
+        "logoText": comp_row["logo_text"]
+    }
+    
+    cursor.execute("SELECT * FROM racks ORDER BY sort_order ASC, rack_id ASC")
+    rack_rows = cursor.fetchall()
+    racks = []
+    for row in rack_rows:
+        racks.append({
+            "id": row["rack_id"],
+            "client": row["client"],
+            "location": row["location"],
+            "date": row["date"],
+            "technician": row["technician"],
+            "frontPhoto": row["front_photo"],
+            "rearPhoto": row["rear_photo"],
+            "qrCode": row["qr_code"],
+            "notes": row["notes"],
+            "checklist": json.loads(row["checklist"]) if row["checklist"] else {},
+            "units": json.loads(row["units"]) if row["units"] else {}
+        })
+        
+    conn.close()
+    return jsonify({"company": company, "racks": racks})
+
+@app.route("/api/data", methods=["POST"])
+def save_data():
+    req = request.json
+    if not req:
+        return jsonify({"error": "No JSON data provided"}), 400
+        
+    company = req.get("company", {})
+    racks = req.get("racks", [])
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Update company
+    cursor.execute("""
+        UPDATE company 
+        SET name = ?, tagline = ?, logo_image = ?, logo_text = ?
+        WHERE id = 1
+    """, (
+        company.get("name"),
+        company.get("tagline"),
+        company.get("logoImage"),
+        company.get("logoText", "SOP")
+    ))
+    
+    # Replace all racks
+    cursor.execute("DELETE FROM racks")
+    for idx, rack in enumerate(racks):
+        cursor.execute("""
+            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            rack.get("id"),
+            rack.get("client"),
+            rack.get("location"),
+            rack.get("date"),
+            rack.get("technician"),
+            rack.get("frontPhoto"),
+            rack.get("rearPhoto"),
+            rack.get("qrCode"),
+            rack.get("notes"),
+            json.dumps(rack.get("checklist", {})),
+            json.dumps(rack.get("units", {})),
+            idx
+        ))
+        
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+if __name__ == "__main__":
+    init_db()
+    app.run(host="0.0.0.0", port=5001, debug=True)

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libro de Mantenimiento de Racks - SQLite Backend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            body {
+                background: white !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .rack-page {
+                page-break-after: always;
+                page-break-inside: avoid;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 15mm !important;
+                width: 100% !important;
+                height: 100vh !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation / Controls (Hidden in Print) -->
+    <header class="no-print bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div id="header-logo-preview" class="bg-blue-600 text-white w-9 h-9 rounded-lg font-bold flex items-center justify-center text-sm overflow-hidden shadow-inner">
+                    <span id="header-logo-text">SOP</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold" id="header-company-name">Soportia IT</h1>
+                    <p class="text-xs text-slate-400" id="header-company-tagline">Base de Datos SQLite &bull; Mantenimiento de Racks</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 mt-2 sm:mt-0">
+                <span id="db-status" class="text-[10px] bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                    <i class="fa-solid fa-database"></i><span>SQLite Conectado</span>
+                </span>
+                <button onclick="app.openConfigModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition flex items-center space-x-1.5" title="Configurar Empresa">
+                    <i class="fa-solid fa-gear text-blue-400"></i><span>Empresa</span>
+                </button>
+                <button onclick="app.addRack()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-plus"></i><span>Nuevo Rack</span>
+                </button>
+                <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file-pdf"></i><span>PDF</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Active Rack Editor (Hidden in Print) -->
+        <section class="no-print lg:col-span-1 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col h-[calc(100vh-120px)] sticky top-20">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h2 class="text-md font-bold text-slate-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-blue-600"></i>
+                    <span>Editor de Expediente (<span id="rack-count">0</span> racks)</span>
+                </h2>
+                <div class="flex space-x-1">
+                    <button onclick="app.prevRack()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 text-sm"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="current-rack-indicator" class="px-3 py-1 bg-slate-100 text-sm font-medium rounded text-slate-700">1 / 1</span>
+                    <button onclick="app.nextRack()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 text-sm"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div id="rack-form-container" class="overflow-y-auto flex-grow space-y-4 pr-1">
+                <!-- Dynamically populated form -->
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between">
+                <button onclick="app.removeCurrentRack()" class="text-red-600 hover:text-red-800 text-xs font-medium flex items-center space-x-1">
+                    <i class="fa-solid fa-trash-can"></i><span>Eliminar este Rack</span>
+                </button>
+                <button onclick="app.loadData()" class="text-slate-500 hover:text-slate-700 text-xs font-medium">
+                    Recargar de DB
+                </button>
+            </div>
+        </section>
+
+        <!-- Right / Full Column: Live Preview & Printable Book Pages -->
+        <section class="lg:col-span-2 flex flex-col items-center space-y-8">
+            <div class="no-print w-full flex justify-between items-center bg-blue-50 border border-blue-100 p-3 rounded-lg text-xs text-blue-800">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-database text-blue-600 text-sm"></i>
+                    <span>Persistencia externa SQLite (`racks.db`). Cambios sincronizados automáticamente con el servidor backend.</span>
+                </div>
+                <span class="font-semibold" id="preview-page-indicator">Rack 1 de 1</span>
+            </div>
+
+            <div id="racks-preview-container" class="w-full flex flex-col items-center space-y-8">
+                <!-- Rendered rack pages will appear here -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Company Configuration Modal (Hidden by default) -->
+    <div id="config-modal" class="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 space-y-5">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-building text-blue-600"></i>
+                    <span>Configuración de la Empresa Mantenedora</span>
+                </h3>
+                <button onclick="app.closeConfigModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nombre de la Empresa</label>
+                    <input type="text" id="modal-company-name" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Lema / Tagline Corporativo</label>
+                    <input type="text" id="modal-company-tagline" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Logotipo Corporativo (Imagen)</label>
+                    <div class="flex items-center space-x-3">
+                        <div id="modal-logo-preview-box" class="w-12 h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold overflow-hidden shadow-inner">
+                            <span id="modal-logo-initials">SOP</span>
+                        </div>
+                        <input type="file" accept="image/*" onchange="app.handleCompanyLogoUpload(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button onclick="app.closeConfigModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition">
+                    Guardar en SQLite
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (Hidden in Print) -->
+    <footer class="no-print bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+        Sistema de Mantenimiento de Racks &bull; Base de Datos SQLite Externa
+    </footer>
+
+    <!-- Frontend Application Logic -->
+    <script>
+        class RackMaintenanceApp {
+            constructor() {
+                this.state = {
+                    currentIndex: 0,
+                    company: {
+                        name: "Soportia IT - Infraestructura y Racks",
+                        tagline: "Departamento de Mantenimiento y Certificación de Comunicaciones",
+                        logoImage: null,
+                        logoText: "SOP"
+                    },
+                    racks: []
+                };
+                this.loadData();
+            }
+
+            async loadData() {
+                try {
+                    const response = await fetch('/api/data');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.state.company = data.company;
+                        this.state.racks = data.racks || [];
+                        if (this.state.currentIndex >= this.state.racks.length) {
+                            this.state.currentIndex = 0;
+                        }
+                        this.showDbStatus("SQLite Conectado", "bg-emerald-900/60 text-emerald-300 border-emerald-700/50");
+                    } else {
+                        this.showDbStatus("Error de Servidor", "bg-red-900/60 text-red-300 border-red-700/50");
+                    }
+                } catch (e) {
+                    console.error("Failed to load from backend", e);
+                    this.showDbStatus("Sin conexión", "bg-amber-900/60 text-amber-300 border-amber-700/50");
+                }
+                this.renderTopHeader();
+                this.renderForm();
+                this.renderPreview();
+            }
+
+            async saveToDatabase() {
+                try {
+                    const response = await fetch('/api/data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            company: this.state.company,
+                            racks: this.state.racks
+                        })
+                    });
+                    if (response.ok) {
+                        this.showDbStatus("Sincronizado SQLite", "bg-emerald-900/60 text-emerald-300 border-emerald-700/50");
+                    } else {
+                        this.showDbStatus("Error al guardar", "bg-red-900/60 text-red-300 border-red-700/50");
+                    }
+                } catch (e) {
+                    console.error("Failed to save to backend", e);
+                    this.showDbStatus("Error de red", "bg-red-900/60 text-red-300 border-red-700/50");
+                }
+            }
+
+            showDbStatus(text, cssClass) {
+                const badge = document.getElementById('db-status');
+                if (badge) {
+                    badge.className = `text-[10px] border px-2.5 py-1 rounded-full flex items-center space-x-1 transition ${cssClass}`;
+                    badge.innerHTML = `<i class="fa-solid fa-database"></i><span>${text}</span>`;
+                }
+            }
+
+            renderTopHeader() {
+                document.getElementById('header-company-name').innerText = this.state.company.name;
+                document.getElementById('header-company-tagline').innerText = this.state.company.tagline;
+                
+                const logoPrev = document.getElementById('header-logo-preview');
+                if (this.state.company.logoImage) {
+                    logoPrev.innerHTML = `<img src="${this.state.company.logoImage}" class="w-full h-full object-cover">`;
+                } else {
+                    logoPrev.innerHTML = `<span id="header-logo-text">${this.state.company.name.substring(0, 3).toUpperCase()}</span>`;
+                }
+            }
+
+            openConfigModal() {
+                document.getElementById('modal-company-name').value = this.state.company.name;
+                document.getElementById('modal-company-tagline').value = this.state.company.tagline;
+                const box = document.getElementById('modal-logo-preview-box');
+                if (this.state.company.logoImage) {
+                    box.innerHTML = `<img src="${this.state.company.logoImage}" class="w-full h-full object-cover">`;
+                } else {
+                    box.innerHTML = `<span id="modal-logo-initials">${this.state.company.name.substring(0, 3).toUpperCase()}</span>`;
+                }
+
+                document.getElementById('modal-company-name').oninput = async (e) => {
+                    this.state.company.name = e.target.value;
+                    this.state.company.logoText = e.target.value.substring(0, 3).toUpperCase();
+                    await this.saveToDatabase();
+                    this.renderTopHeader();
+                    this.renderPreview();
+                };
+                document.getElementById('modal-company-tagline').oninput = async (e) => {
+                    this.state.company.tagline = e.target.value;
+                    await this.saveToDatabase();
+                    this.renderTopHeader();
+                    this.renderPreview();
+                };
+
+                document.getElementById('config-modal').classList.remove('hidden');
+            }
+
+            closeConfigModal() {
+                document.getElementById('config-modal').classList.add('hidden');
+            }
+
+            handleCompanyLogoUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        this.state.company.logoImage = e.target.result;
+                        await this.saveToDatabase();
+                        this.renderTopHeader();
+                        this.renderPreview();
+                        this.openConfigModal();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            currentRack() {
+                return this.state.racks[this.state.currentIndex] || this.state.racks[0];
+            }
+
+            async addRack() {
+                const newId = `RACK-EXT-0${this.state.racks.length + 1}`;
+                this.state.racks.push({
+                    id: newId,
+                    client: "Nueva Sucursal / Área",
+                    location: "Sala de Servidores - Ubicación por definir",
+                    date: new Date().toISOString().split('T')[0],
+                    technician: "Técnico Asignado",
+                    frontPhoto: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=60",
+                    rearPhoto: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&auto=format&fit=crop&q=60",
+                    qrCode: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://app.soportia.com/rack/" + newId,
+                    notes: "Inspección inicial y revisión de estado general.",
+                    checklist: {
+                        cabling: true,
+                        power: true,
+                        temperature: true,
+                        labeling: true,
+                        grounding: true
+                    },
+                    units: {
+                        42: "Patch Panel Superior",
+                        1: "Regleta de Alimentación / UPS"
+                    }
+                });
+                this.state.currentIndex = this.state.racks.length - 1;
+                await this.saveAndRefresh();
+            }
+
+            async removeCurrentRack() {
+                if (this.state.racks.length <= 1) {
+                    alert("Debe mantener al menos un rack en la base de datos.");
+                    return;
+                }
+                if (confirm("¿Está seguro de eliminar este rack de la base de datos SQLite?")) {
+                    this.state.racks.splice(this.state.currentIndex, 1);
+                    if (this.state.currentIndex >= this.state.racks.length) {
+                        this.state.currentIndex = this.state.racks.length - 1;
+                    }
+                    await this.saveAndRefresh();
+                }
+            }
+
+            prevRack() {
+                if (this.state.currentIndex > 0) {
+                    this.state.currentIndex--;
+                    this.renderForm();
+                    this.updateIndicators();
+                }
+            }
+
+            nextRack() {
+                if (this.state.currentIndex < this.state.racks.length - 1) {
+                    this.state.currentIndex++;
+                    this.renderForm();
+                    this.updateIndicators();
+                }
+            }
+
+            async saveAndRefresh() {
+                await this.saveToDatabase();
+                this.renderForm();
+                this.renderPreview();
+            }
+
+            async updateField(field, value) {
+                const rack = this.currentRack();
+                rack[field] = value;
+                await this.saveToDatabase();
+                this.renderPreviewSingle(this.state.currentIndex);
+            }
+
+            async updateChecklist(key, value) {
+                const rack = this.currentRack();
+                if (!rack.checklist) rack.checklist = {};
+                rack.checklist[key] = value;
+                await this.saveToDatabase();
+                this.renderPreviewSingle(this.state.currentIndex);
+            }
+
+            async updateUnit(uNum, value) {
+                const rack = this.currentRack();
+                if (!rack.units) rack.units = {};
+                if (value.trim() === "") {
+                    delete rack.units[uNum];
+                } else {
+                    rack.units[uNum] = value;
+                }
+                await this.saveToDatabase();
+                this.renderPreviewSingle(this.state.currentIndex);
+            }
+
+            async handleImageUpload(field, event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        this.currentRack()[field] = e.target.result;
+                        await this.saveAndRefresh();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            updateIndicators() {
+                document.getElementById('rack-count').innerText = this.state.racks.length;
+                document.getElementById('current-rack-indicator').innerText = `${this.state.currentIndex + 1} / ${this.state.racks.length}`;
+                document.getElementById('preview-page-indicator').innerText = `Rack ${this.state.currentIndex + 1} de ${this.state.racks.length} (SQLite)`;
+            }
+
+            renderForm() {
+                this.updateIndicators();
+                this.renderTopHeader();
+                if (this.state.racks.length === 0) return;
+                const rack = this.currentRack();
+                const container = document.getElementById('rack-form-container');
+                
+                let unitsHtml = '';
+                for (let u = 42; u >= 1; u--) {
+                    const val = (rack.units && rack.units[u]) ? rack.units[u] : '';
+                    unitsHtml += `
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="w-8 font-mono font-bold text-slate-500 text-right">${u}U</span>
+                            <input type="text" value="${val}" oninput="app.updateUnit(${u}, this.value)" placeholder="Libre / Equipo..." class="flex-grow border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    `;
+                }
+
+                const chk = rack.checklist || {};
+
+                container.innerHTML = `
+                    <div class="space-y-4">
+                        <!-- Rack Details -->
+                        <div class="space-y-3">
+                            <span class="text-xs font-bold text-slate-700 block uppercase tracking-wider"><i class="fa-solid fa-server text-blue-600 mr-1"></i> Expediente del Rack</span>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Identificador (ID)</label>
+                                <input type="text" value="${rack.id}" oninput="app.updateField('id', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Cliente / Área Interna</label>
+                                <input type="text" value="${rack.client}" oninput="app.updateField('client', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Ubicación Física</label>
+                                <input type="text" value="${rack.location}" oninput="app.updateField('location', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha</label>
+                                    <input type="date" value="${rack.date}" oninput="app.updateField('date', this.value)" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Técnico</label>
+                                    <input type="text" value="${rack.technician}" oninput="app.updateField('technician', this.value)" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Checklist Verification -->
+                        <div class="border-t border-slate-200 pt-3">
+                            <label class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider"><i class="fa-solid fa-list-check text-blue-600 mr-1"></i> Checklist de Verificación</label>
+                            <div class="space-y-1.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" ${chk.cabling ? 'checked' : ''} onchange="app.updateChecklist('cabling', this.checked)" class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span>Cableado estructurado peinado y ordenado</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" ${chk.power ? 'checked' : ''} onchange="app.updateChecklist('power', this.checked)" class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span>Alimentación y SAI/UPS operativos</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" ${chk.temperature ? 'checked' : ''} onchange="app.updateChecklist('temperature', this.checked)" class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span>Temperatura y climatización nominales</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" ${chk.labeling ? 'checked' : ''} onchange="app.updateChecklist('labeling', this.checked)" class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span>Etiquetado de puertos y equipos completo</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" ${chk.grounding ? 'checked' : ''} onchange="app.updateChecklist('grounding', this.checked)" class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span>Puesta a tierra del rack verificada</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Photos -->
+                        <div class="border-t border-slate-200 pt-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-2">Fotos del Rack (Sincronizadas SQLite)</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="text-[10px] text-slate-500 block mb-1">Vista Frontal</span>
+                                    <input type="file" accept="image/*" onchange="app.handleImageUpload('frontPhoto', event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-500 block mb-1">Vista Trasera</span>
+                                    <input type="file" accept="image/*" onchange="app.handleImageUpload('rearPhoto', event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- QR Code -->
+                        <div class="border-t border-slate-200 pt-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Código QR (URL App Móvil)</label>
+                            <input type="text" value="${rack.qrCode}" oninput="app.updateField('qrCode', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="border-t border-slate-200 pt-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-2">Notas del Técnico</label>
+                            <textarea rows="3" oninput="app.updateField('notes', this.value)" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">${rack.notes}</textarea>
+                        </div>
+
+                        <!-- Schema -->
+                        <div class="border-t border-slate-200 pt-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-2">Esquema del Rack (42U)</label>
+                            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 max-h-60 overflow-y-auto space-y-1">
+                                ${unitsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderPreview() {
+                const container = document.getElementById('racks-preview-container');
+                container.innerHTML = '';
+                this.state.racks.forEach((rack, index) => {
+                    container.appendChild(this.createRackPageElement(rack, index));
+                });
+            }
+
+            renderPreviewSingle(index) {
+                const container = document.getElementById('racks-preview-container');
+                const existingCard = container.children[index];
+                const rack = this.state.racks[index];
+                const newCard = this.createRackPageElement(rack, index);
+                if (existingCard) {
+                    container.replaceChild(newCard, existingCard);
+                } else {
+                    container.appendChild(newCard);
+                }
+            }
+
+            createRackPageElement(rack, index) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border ${index === this.state.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
+                
+                let schemaHtml = '';
+                for (let u = 42; u >= 1; u--) {
+                    const equipment = rack.units && rack.units[u] ? rack.units[u] : '';
+                    const hasEq = equipment.trim() !== '';
+                    schemaHtml += `
+                        <div class="flex items-center text-[9px] border-b border-slate-100 py-[1.5px] ${hasEq ? 'bg-blue-50/60 font-medium text-slate-900' : 'text-slate-400'}">
+                            <span class="w-7 text-right pr-2 font-mono text-slate-500 border-r border-slate-200">${u}</span>
+                            <span class="pl-2 truncate">${hasEq ? equipment : '<span class="italic text-slate-300">Unidad libre</span>'}</span>
+                        </div>
+                    `;
+                }
+
+                const chk = rack.checklist || {};
+                const renderCheck = (val, label) => `
+                    <div class="flex items-center space-x-1.5 text-[10px]">
+                        <span class="w-3.5 h-3.5 rounded flex items-center justify-center font-bold text-[9px] ${val ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}">
+                            ${val ? '✓' : '✕'}
+                        </span>
+                        <span class="${val ? 'text-slate-800 font-medium' : 'text-slate-400'}">${label}</span>
+                    </div>
+                `;
+
+                let pageLogoHtml = '';
+                if (this.state.company.logoImage) {
+                    pageLogoHtml = `<img src="${this.state.company.logoImage}" class="w-full h-full object-cover">`;
+                } else {
+                    pageLogoHtml = `<span class="text-base">${this.state.company.name.substring(0, 3).toUpperCase()}</span>`;
+                }
+
+                pageDiv.innerHTML = `
+                    <!-- Fixed Header -->
+                    <div>
+                        <header class="flex justify-between items-center pb-3 border-b-2 border-slate-900 mb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-11 h-11 bg-slate-900 text-white font-black flex items-center justify-center rounded-lg overflow-hidden shadow-inner">
+                                    ${pageLogoHtml}
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">${this.state.company.name}</h2>
+                                    <p class="text-[10px] text-slate-500">${this.state.company.tagline}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-slate-900 text-white text-xs font-mono font-bold px-3 py-1 rounded">
+                                    ${rack.id}
+                                </span>
+                                <p class="text-[10px] text-slate-500 mt-1">Fecha: ${rack.date}</p>
+                            </div>
+                        </header>
+
+                        <!-- Rack Metadata Bar -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-3 grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block uppercase">Cliente / Área</span>
+                                <span class="font-bold text-slate-800">${rack.client}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block uppercase">Ubicación</span>
+                                <span class="text-slate-800">${rack.location}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-400 block uppercase">Técnico Responsable</span>
+                                <span class="text-slate-800">${rack.technician}</span>
+                            </div>
+                        </div>
+
+                        <!-- Main Content Grid -->
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <!-- Column 1: Photos -->
+                            <div class="space-y-2">
+                                <div>
+                                    <span class="text-[10px] font-bold text-slate-700 block mb-0.5"><i class="fa-solid fa-camera mr-1 text-blue-600"></i> Vista Frontal</span>
+                                    <div class="h-28 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center">
+                                        <img src="${rack.frontPhoto}" class="w-full h-full object-cover" alt="Vista Frontal">
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-bold text-slate-700 block mb-0.5"><i class="fa-solid fa-camera-rotate mr-1 text-blue-600"></i> Vista Trasera</span>
+                                    <div class="h-28 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center">
+                                        <img src="${rack.rearPhoto}" class="w-full h-full object-cover" alt="Vista Trasera">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 2: 42U Rack Schema -->
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-bold text-slate-700 block mb-0.5"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema Rack (42U)</span>
+                                <div class="bg-white border border-slate-300 rounded-lg flex-grow overflow-y-auto max-h-[240px] p-1 shadow-inner">
+                                    ${schemaHtml}
+                                </div>
+                            </div>
+
+                            <!-- Column 3: QR & Checklist -->
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-lg p-2">
+                                    <img src="${rack.qrCode}" class="w-16 h-16 object-contain" alt="Código QR App">
+                                    <div class="text-[9px] text-slate-600">
+                                        <span class="font-bold text-slate-800 block">App Móvil</span>
+                                        Escanear expediente digital.
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 flex flex-col justify-between flex-grow">
+                                    <span class="text-[10px] font-bold text-slate-800 block mb-1 border-b border-slate-200 pb-0.5"><i class="fa-solid fa-list-check text-blue-600 mr-1"></i> Verificación</span>
+                                    <div class="space-y-1">
+                                        ${renderCheck(chk.cabling, 'Cableado estructurado')}
+                                        ${renderCheck(chk.power, 'Alimentación / UPS')}
+                                        ${renderCheck(chk.temperature, 'Temperatura OK')}
+                                        ${renderCheck(chk.labeling, 'Etiquetado completo')}
+                                        ${renderCheck(chk.grounding, 'Puesta a tierra')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Technician Notes -->
+                        <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 mb-3">
+                            <h3 class="text-[10px] font-bold text-slate-700 mb-0.5 flex items-center">
+                                <i class="fa-solid fa-clipboard-user mr-1 text-blue-600"></i> Notas y Observaciones del Técnico
+                            </h3>
+                            <p class="text-[10px] text-slate-600 leading-relaxed min-h-[35px] whitespace-pre-wrap">${rack.notes || 'Sin observaciones registradas.'}</p>
+                        </div>
+                    </div>
+
+                    <!-- Fixed Footer -->
+                    <footer class="pt-2 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500">
+                        <div>
+                            <span>${this.state.company.name} &bull; ${this.state.company.tagline}</span>
+                        </div>
+                        <div>
+                            <span>Bitácora de Racks &bull; Página ${index + 1} de ${this.state.racks.length}</span>
+                        </div>
+                    </footer>
+                `;
+                return pageDiv;
+            }
+        }
+
+        const app = new RackMaintenanceApp();
+    </script>
+</body>
+</html>
