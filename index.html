@@ -576,18 +576,24 @@
                 pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border ${index === this.state.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
                 
                 let schemaHtml = '<div class="grid grid-cols-6 gap-1">';
-                for (let u = 42; u >= 1; u--) {
-                    const equipment = rack.units && rack.units[u] ? rack.units[u] : '';
-                    const hasEq = equipment.trim() !== '';
-                    schemaHtml += `
-                        <div class="border border-slate-200 rounded p-1 text-[8px] bg-slate-50 ${hasEq ? 'bg-blue-50/70 border-blue-200 font-medium text-slate-900' : 'text-slate-400'}">
-                            <div class="font-bold text-[9px] text-slate-600 border-b border-slate-200 pb-0.5 mb-0.5 flex justify-between">
-                                <span>U${u}</span>
-                                <span>${hasEq ? '●' : '○'}</span>
+                for (let col = 0; col < 6; col++) {
+                    schemaHtml += '<div class="space-y-1">';
+                    const startU = 42 - (col * 7);
+                    const endU = startU - 6;
+                    for (let u = startU; u >= endU; u--) {
+                        const equipment = rack.units && rack.units[u] ? rack.units[u] : '';
+                        const hasEq = equipment.trim() !== '';
+                        schemaHtml += `
+                            <div class="border border-slate-200 rounded p-1 text-[8px] bg-slate-50 ${hasEq ? 'bg-blue-50/70 border-blue-200 font-medium text-slate-900' : 'text-slate-400'}">
+                                <div class="font-bold text-[9px] text-slate-600 border-b border-slate-200 pb-0.5 mb-0.5 flex justify-between">
+                                    <span>U${u}</span>
+                                    <span>${hasEq ? '●' : '○'}</span>
+                                </div>
+                                <div class="truncate" title="${equipment}">${hasEq ? equipment : '<span class="italic text-slate-300">Libre</span>'}</div>
                             </div>
-                            <div class="truncate" title="${equipment}">${hasEq ? equipment : '<span class="italic text-slate-300">Libre</span>'}</div>
-                        </div>
-                    `;
+                        `;
+                    }
+                    schemaHtml += '</div>';
                 }
                 schemaHtml += '</div>';
 
@@ -732,9 +738,9 @@
                             </div>
                         </div>
 
-                        <!-- Bottom Section: 42U Rack Schema (Horizontal 6 Columns) -->
+                        <!-- Bottom Section: 42U Rack Schema -->
                         <div class="mb-3">
-                            <span class="text-[10px] font-bold text-slate-700 block mb-1"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema del Rack (42U - Horizontal)</span>
+                            <span class="text-[10px] font-bold text-slate-700 block mb-1"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema de Rack 42U</span>
                             <div class="bg-white border border-slate-300 rounded-lg p-2 shadow-inner">
                                 ${schemaHtml}
                             </div>

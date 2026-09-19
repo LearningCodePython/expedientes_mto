@@ -4,12 +4,13 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
-## v0.3.0 - Rediseño de Vistas Fotográficas y Esquema 42U Horizontal en 6 Columnas (Marzo 2026)
+## v0.3.0 - Rediseño de Vistas Fotográficas y Esquema de Rack 42U por Columnas (Marzo 2026)
 
 ### Hitos Principales
-- **Esquema 42U Horizontal en 6 Columnas**: Reestructuración de la sección de esquema de rack 42U a un formato horizontal dividido en 6 columnas con celdas compactas para las 42 unidades.
+- **Esquema de Rack 42U por Columnas**: Ordenación de las 42 unidades en 6 columnas verticales de 7 unidades cada una (desde la primera columna con U42→U36 a la sexta con U7→U1).
+- **Renombramiento de Sección**: Actualización del título a "Esquema de Rack 42U".
 - **Reorganización de Secciones Principales**: Posicionamiento del esquema 42U en la parte inferior, debajo de la cuadrícula superior que agrupa la **Vista Frontal**, **Vista Trasera**, **Código QR** y **Verificación**.
-- **Formato Vertical 9:16 para Fotografías**: Contenedores 9:16 para vistas frontal y trasera situadas a la izquierda.
+- **Formato Vertical 9:16 para Fotografías**: Contenedores 9:16 para vistas frontal y trasera.
 - **Gestión de Exclusiones de Git (`.gitignore`)**: Creación e integración del fichero `.gitignore`.
 - **Actualización de Directrices (`AGENTS.md`)**: Optimización de directrices para OpenCode.
 
