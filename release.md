@@ -4,13 +4,14 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
-## v0.3.0 - Rediseño de Vistas Fotográficas (9:16) y Maquetación A4 (Marzo 2026)
+## v0.3.0 - Rediseño de Vistas Fotográficas y Esquema 42U Completo (Marzo 2026)
 
 ### Hitos Principales
-- **Formato Vertical 9:16 para Fotografías**: Rediseño de los contenedores de "Vista Frontal" y "Vista Trasera" con relación de aspecto estricta `9:16` (`aspect-[9/16]`) y ajuste visual de imagen (`object-cover`).
-- **Disposición Fotográfica en Paralelo**: Reorganización de la cuadrícula principal a 4 columnas situando la **Vista Frontal a la izquierda** y la **Vista Trasera justo a su derecha**.
-- **Gestión de Exclusiones de Git (`.gitignore`)**: Creación e integración del fichero `.gitignore` para ignorar bytecode de Python, bases de datos locales SQLite (`*.db`) y archivos temporales de editores/sistema.
-- **Actualización de Directrices (`AGENTS.md`)**: Optimización del archivo de instrucciones para futuras sesiones de OpenCode.
+- **Esquema 42U Completo sin Scroll**: Eliminación de la altura máxima y el scroll en la sección de esquema 42U, mostrando las 42 unidades completas de forma nativa en todas las vistas (DB y Plantilla de Campo).
+- **Alineación Dinámica de Fotografías**: Ajuste de altura de los contenedores de "Vista Frontal" y "Vista Trasera" para igualar automáticamente la altura de la sección de esquema 42U completa.
+- **Disposición Fotográfica en Paralelo**: Cuadrícula de 4 columnas con **Vista Frontal a la izquierda** y **Vista Trasera justo a su derecha**.
+- **Gestión de Exclusiones de Git (`.gitignore`)**: Creación e integración del fichero `.gitignore`.
+- **Actualización de Directrices (`AGENTS.md`)**: Optimización de directrices para OpenCode.
 
 ## v0.2.0 - Modo Plantilla de Campo y Diferenciación DB / PDF (Marzo 2026)
 
