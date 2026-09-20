@@ -10,6 +10,5 @@ services:
     volumes:
       - ./racks.db:/app/racks.db
       - ./uploads:/app/uploads
-    environment:
-      - SECRET_KEY=plantilla-mto-production-secret-key-2026
-      - PORT=5001
+    env_file:
+      - .env
