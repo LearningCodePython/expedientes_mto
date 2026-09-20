@@ -288,13 +288,15 @@ def save_data():
 @login_required
 def upload_file():
     rack_id = request.form.get("rack_id") or (request.json and request.json.get("rack_id"))
+    file_type = request.form.get("type") or "qr"
     
     if 'file' in request.files:
         file = request.files['file']
         if file and file.filename != '':
             os.makedirs("uploads", exist_ok=True)
             safe_rack_id = "".join(c if c.isalnum() else "_" for c in (rack_id or "rack"))
-            filename = f"qr_{safe_rack_id}_{file.filename}"
+            prefix = file_type if file_type in ["front", "rear", "qr"] else "img"
+            filename = f"{prefix}_{safe_rack_id}_{file.filename}"
             filepath = os.path.join("uploads", filename)
             file.save(filepath)
             return jsonify({"status": "success", "url": f"/{filepath}"})
