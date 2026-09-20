@@ -4,6 +4,27 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.7.0 - Contenedor Docker y Preparación para Despliegue con Coolify (Marzo 2026)
+
+### Hitos Principales
+- **Dockerfile optimizado**: Imagen ligera basada en Python 3.10-slim con instalación de dependencias y ejecución expuesta en el puerto interno `5001`.
+- **Docker Compose (`docker-compose.yml`)**: Configuración para desarrollo y pruebas locales con persistencia de volúmenes para la base de datos SQLite (`racks.db`) y directorio de subidas (`uploads/`).
+- **Fichero `.dockerignore`**: Exclusión de artefactos innecesarios para optimizar el tamaño de compilación de la imagen.
+- **Soporte para Coolify**: Preparado para despliegue automático en producción en `https://expedientes.cremheda.online` gestionando SSL en el proxy inverso (puerto 443) y enrutando al puerto interno `5001`.
+
+---
+
+## v0.6.0 - Sistema de Autenticación de Usuario y Contraseña (Marzo 2026)
+
+### Hitos Principales
+- **Sistema de Autenticación por Sesión Flask**: Endpoints `/api/login`, `/api/logout`, `/api/check-auth` y `/api/change-password` con cifrado seguro de contraseñas (`werkzeug.security`) y control de acceso mediante decorador `@login_required`.
+- **Base de Datos de Usuarios (`users`)**: Tabla en SQLite con cuenta predeterminada (`admin` / `admin123`) inicializada automáticamente.
+- **Modal de Inicio de Sesión y Badge de Usuario**: Interfaz modal responsiva en Tailwind CSS para autenticación y indicador visual con opción de cierre de sesión en la cabecera superior.
+- **Modificación de Contraseña**: Funcionalidad para que el usuario autenticado (admin) pueda cambiar su contraseña desde el panel superior con verificación de contraseña actual y nueva contraseña cifrada.
+- **Protección de API y Vistas**: Restricción de acceso a datos y operaciones de guardado/subida únicamente a usuarios autenticados con redirección automática ante códigos 401.
+
+---
+
 ## v0.5.0 - Subida Manual de QR, Rediseño de Vista Móvil y Corrección de PDF (Marzo 2026)
 
 ### Hitos Principales

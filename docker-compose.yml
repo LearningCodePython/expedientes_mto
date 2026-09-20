@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  plantilla_mto:
+    build: .
+    container_name: plantilla_mto_app
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./racks.db:/app/racks.db
+      - ./uploads:/app/uploads
+    environment:
+      - SECRET_KEY=plantilla-mto-production-secret-key-2026
+      - PORT=5001

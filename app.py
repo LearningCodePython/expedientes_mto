@@ -1,15 +1,38 @@
 import os
 import sqlite3
 import json
-from flask import Flask, render_template_string, request, jsonify, send_from_directory
+from functools import wraps
+from flask import Flask, render_template_string, request, jsonify, send_from_directory, session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY") or "plantilla-mto-secret-key-2026-secure"
 DB_PATH = "racks.db"
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "username" not in session:
+            return jsonify({"error": "No autorizado. Inicie sesión."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
+    # Table for users
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT
+        )
+    """)
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] == 0:
+        hashed_pw = generate_password_hash("admin123")
+        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("admin", hashed_pw))
+
     # Table for company configuration
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS company (
@@ -111,7 +134,69 @@ def index():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
+@app.route("/api/check-auth", methods=["GET"])
+def check_auth():
+    if "username" in session:
+        return jsonify({"authenticated": True, "username": session["username"]})
+    return jsonify({"authenticated": False})
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.json or request.form
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    username = data.get("username")
+    password = data.get("password")
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row and check_password_hash(row[0], password):
+        session["username"] = username
+        return jsonify({"status": "success", "username": username})
+    return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.pop("username", None)
+    return jsonify({"status": "success"})
+
+@app.route("/api/change-password", methods=["POST"])
+@login_required
+def change_password():
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+        
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    
+    if not current_password or not new_password:
+        return jsonify({"error": "Faltan datos requeridos"}), 400
+        
+    username = session["username"]
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    
+    if not row or not check_password_hash(row[0], current_password):
+        conn.close()
+        return jsonify({"error": "La contraseña actual es incorrecta"}), 400
+        
+    new_hashed = generate_password_hash(new_password)
+    cursor.execute("UPDATE users SET password = ? WHERE username = ?", (new_hashed, username))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success"})
+
 @app.route("/api/data", methods=["GET"])
+@login_required
 def get_data():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -149,6 +234,7 @@ def get_data():
     return jsonify({"company": company, "racks": racks})
 
 @app.route("/api/data", methods=["POST"])
+@login_required
 def save_data():
     req = request.json
     if not req:
@@ -199,6 +285,7 @@ def save_data():
     return jsonify({"status": "success"})
 
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload_file():
     rack_id = request.form.get("rack_id") or (request.json and request.json.get("rack_id"))
     
