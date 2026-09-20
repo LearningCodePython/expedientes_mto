@@ -977,7 +977,10 @@
 
                         <!-- QR Code Upload -->
                         <div class="border-t border-slate-200 pt-3">
-                            <label class="block text-xs font-semibold text-slate-600 mb-1"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> Código QR (Imagen JPG)</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs font-semibold text-slate-600"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> Código QR (Imagen JPG)</label>
+                                ${rack.qrCode ? `<a href="${rack.qrCode}" target="_blank" download class="text-[9px] text-blue-600 hover:underline"><i class="fa-solid fa-download mr-0.5"></i>Descargar</a>` : ''}
+                            </div>
                             <div class="flex items-center space-x-2">
                                 <input type="file" accept="image/jpeg,image/*" onchange="app.handleUploadQR(event)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                                 ${rack.qrCode ? `<img src="${rack.qrCode}" class="w-10 h-10 object-contain border border-slate-200 rounded flex-shrink-0" alt="QR">` : ''}
@@ -1303,7 +1306,10 @@
 
                             <!-- Column 3: QR Code -->
                             <div class="flex flex-col">
-                                <span class="text-[10px] font-bold text-slate-700 block mb-0.5 truncate"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> App Móvil</span>
+                                <div class="flex items-center justify-between mb-0.5">
+                                    <span class="text-[10px] font-bold text-slate-700 truncate"><i class="fa-solid fa-qrcode mr-1 text-blue-600"></i> App Móvil</span>
+                                    ${rack.qrCode ? `<a href="${rack.qrCode}" target="_blank" download class="text-[9px] text-blue-600 hover:underline print:hidden"><i class="fa-solid fa-download"></i></a>` : ''}
+                                </div>
                                 <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-between flex-grow text-center">
                                     ${rack.qrCode ? `<img src="${rack.qrCode}" class="w-full aspect-square object-contain rounded bg-white p-0.5 border border-slate-200 shadow-sm mb-1" alt="Código QR App">` : `<div class="w-full aspect-square bg-slate-200 rounded flex items-center justify-center text-[9px] text-slate-400 mb-1">Sin QR</div>`}
                                     <div class="text-[8px] text-slate-600 leading-tight">
