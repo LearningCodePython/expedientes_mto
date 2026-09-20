@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or "plantilla-mto-secret-key-2026-secure"
-DB_PATH = "racks.db"
+DB_PATH = os.environ.get("DB_PATH", "racks.db")
 
 def login_required(f):
     @wraps(f)
