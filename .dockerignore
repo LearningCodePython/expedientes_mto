@@ -10,3 +10,11 @@ CLAUDE.md
 docker-compose.yml
 Dockerfile
 .dockerignore
+*.db
+*.sqlite
+*.sqlite3
+data/
+uploads/
+.env
+release.md
+Libro.pdf

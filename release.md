@@ -4,6 +4,14 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.12.0 - Corrección Definitiva de Persistencia en Contenedores Docker y Coolify (Marzo 2026)
+
+### Hitos Principales
+- **Ruta Estricta de Base de Datos (`data/racks.db`)**: Configuración en `app.py` para que `DB_PATH` apunte obligatoriamente al directorio persistente `/app/data/racks.db`, evitando cualquier dependencia de bases de datos efímeras en la raíz del contenedor.
+- **Actualización de `.dockerignore`**: Exclusión explícita de ficheros de bases de datos (`*.db`), directorios `data/` y `uploads/` para evitar que se empaqueten bases de datos antiguas o vacías dentro de las imágenes Docker al compilar en Coolify.
+
+---
+
 ## v0.11.0 - Separación Inteligente de Exportación PDF según Vista Activa (Marzo 2026)
 
 ### Hitos Principales

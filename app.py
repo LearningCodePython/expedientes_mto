@@ -8,10 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or "plantilla-mto-secret-key-2026-secure"
 os.makedirs("data", exist_ok=True)
-if os.path.exists("racks.db") and not os.path.exists("data/racks.db"):
-    DB_PATH = os.environ.get("DB_PATH", "racks.db")
-else:
-    DB_PATH = os.environ.get("DB_PATH", "data/racks.db")
+DB_PATH = os.environ.get("DB_PATH", "data/racks.db")
 
 def login_required(f):
     @wraps(f)
