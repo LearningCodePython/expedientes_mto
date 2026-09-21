@@ -4,6 +4,14 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.9.0 - Agrupación por Cliente/Área y Sistema de Búsqueda Rápida (Marzo 2026)
+
+### Hitos Principales
+- **Agrupación Jerárquica en Selector**: Organización de los expedientes mediante `<optgroup>` agrupados por **Cliente / Área**, conteniendo en su interior los identificadores ID de los racks correspondientes.
+- **Campo de Búsqueda Integrado**: Incorporación de un campo de búsqueda en la barra de navegación superior para filtrar expedientes instantáneamente por cliente, ubicación o ID de rack.
+
+---
+
 ## v0.8.0 - Optimización Estricta de Impresión y Exportación a PDF A4 (Marzo 2026)
 
 ### Hitos Principales

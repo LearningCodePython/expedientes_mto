@@ -176,6 +176,10 @@
                     <button onclick="app.prevRack()" class="bg-white border border-blue-200 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded font-semibold transition flex items-center space-x-1 shadow-sm">
                         <i class="fa-solid fa-arrow-left"></i><span>Anterior</span>
                     </button>
+                    <div class="relative flex items-center">
+                        <i class="fa-solid fa-search absolute left-2.5 text-slate-400 text-[10px]"></i>
+                        <input type="text" id="rack-search-input" oninput="app.filterRacks(this.value)" placeholder="Buscar cliente / ID..." class="bg-white border border-blue-300 text-blue-900 rounded pl-7 pr-2 py-1 text-xs focus:outline-none shadow-sm w-36">
+                    </div>
                     <select id="rack-jump-select" onchange="app.jumpToRack(this.value)" class="bg-white border border-blue-300 text-blue-900 rounded px-2.5 py-1 font-semibold focus:outline-none shadow-sm">
                         <!-- Options populated dynamically -->
                     </select>
@@ -320,7 +324,8 @@
                         logoImage: null,
                         logoText: "SOP"
                     },
-                    racks: []
+                    racks: [],
+                    searchQuery: ""
                 };
                 this.initAuth();
             }
@@ -824,13 +829,65 @@
                 const select = document.getElementById('rack-jump-select');
                 if (select) {
                     select.innerHTML = '';
+                    const searchQuery = (this.state.searchQuery || '').toLowerCase();
+                    
+                    const groups = {};
                     this.state.racks.forEach((r, idx) => {
-                        const opt = document.createElement('option');
-                        opt.value = idx;
-                        opt.selected = (idx === this.state.currentIndex);
-                        opt.text = `${r.id} (${r.client})`;
-                        select.appendChild(opt);
+                        const clientName = r.client || 'Sin Cliente / Área';
+                        if (searchQuery) {
+                            const matchClient = clientName.toLowerCase().includes(searchQuery);
+                            const matchId = (r.id || '').toLowerCase().includes(searchQuery);
+                            const matchLocation = (r.location || '').toLowerCase().includes(searchQuery);
+                            if (!matchClient && !matchId && !matchLocation) return;
+                        }
+                        
+                        if (!groups[clientName]) {
+                            groups[clientName] = [];
+                        }
+                        groups[clientName].push({ rack: r, index: idx });
                     });
+                    
+                    const groupKeys = Object.keys(groups);
+                    if (groupKeys.length === 0) {
+                        const opt = document.createElement('option');
+                        opt.text = 'Sin resultados';
+                        opt.disabled = true;
+                        select.appendChild(opt);
+                        return;
+                    }
+                    
+                    groupKeys.forEach(clientName => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = `📁 ${clientName}`;
+                        
+                        groups[clientName].forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = item.index;
+                            opt.selected = (item.index === this.state.currentIndex);
+                            opt.text = `   └─ ID: ${item.rack.id} (${item.rack.location || ''})`;
+                            optgroup.appendChild(opt);
+                        });
+                        
+                        select.appendChild(optgroup);
+                    });
+                }
+            }
+
+            filterRacks(query) {
+                this.state.searchQuery = query;
+                this.updateIndicators();
+                const searchQuery = query.toLowerCase().trim();
+                if (searchQuery) {
+                    const foundIdx = this.state.racks.findIndex(r => 
+                        (r.client || '').toLowerCase().includes(searchQuery) ||
+                        (r.id || '').toLowerCase().includes(searchQuery) ||
+                        (r.location || '').toLowerCase().includes(searchQuery)
+                    );
+                    if (foundIdx !== -1) {
+                        this.state.currentIndex = foundIdx;
+                        this.renderForm();
+                        this.renderPreview();
+                    }
                 }
             }
 
