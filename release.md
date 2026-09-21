@@ -4,6 +4,13 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.13.0 - Limpieza de Base de Datos en el Repositorio Git (Marzo 2026)
+
+### Hitos Principales
+- **Desindexación de `racks.db`**: Eliminación definitiva del fichero de base de datos del índice de Git (`git rm --cached racks.db`) para impedir que Coolify o cualquier despliegue remoto reemplace la base de datos persistente del volumen por una versión por defecto al clonar el repositorio.
+
+---
+
 ## v0.12.0 - Corrección Definitiva de Persistencia en Contenedores Docker y Coolify (Marzo 2026)
 
 ### Hitos Principales
