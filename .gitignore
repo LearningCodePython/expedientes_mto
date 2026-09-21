@@ -44,3 +44,5 @@ Thumbs.db
 *~
 .vscode/
 .idea/
+*.pdf
+index_test.html

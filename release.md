@@ -4,6 +4,16 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.8.0 - Optimización Estricta de Impresión y Exportación a PDF A4 (Marzo 2026)
+
+### Hitos Principales
+- **Corrección de Margen de Impresión A4**: Anulación del layout de pantalla (padding de contenedores, flex y min-height) en `@media print` para asegurar que cada `.rack-page` comience exactamente en la esquina superior de la hoja.
+- **Ajuste de Altura y Padding**: Definición precisa de `296.5mm` de altura y `5mm 8mm` de padding por página para evitar páginas en blanco o desbordamientos accidentales.
+- **Evitar Página en Blanco Final**: Configuración de `.rack-page:last-child` para desactivar el salto de página forzado en el último rack del informe.
+- **Compactación Adaptativa**: Escalado automático de elementos internos (fotografías y celdas de esquema 42U) durante la impresión para garantizar que todo el contenido encaje perfectamente en una sola página A4.
+
+---
+
 ## v0.7.0 - Contenedor Docker y Preparación para Despliegue con Coolify (Marzo 2026)
 
 ### Hitos Principales

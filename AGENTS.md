@@ -6,7 +6,7 @@
 - **Deployment**: Docker container (`Dockerfile`, `docker-compose.yml`) exposing port `5001`. Ready for Coolify with persistent volumes for `racks.db` and `uploads/`.
 
 ## Developer Commands
-- **Start Server**: `pip install -r requirements.txt && python3 app.py` (`http://localhost:5001`)
+- **Start Server**: `pip3 install -r requirements.txt && python3 app.py` (`http://localhost:5001`)
 - **Docker Dev**: `docker-compose up --build`
 
 ## Core Conventions & Rules
