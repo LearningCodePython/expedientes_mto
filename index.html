@@ -1253,31 +1253,43 @@
                 const filteredRacks = clientFilter === 'ALL' 
                     ? this.state.racks 
                     : this.state.racks.filter(r => (r.client || 'Sin Cliente') === clientFilter);
-                
-                const totalPages = 1 + (filteredRacks.length * 2);
-                let currentPage = 1;
-                
-                // 1. Cover Page
-                const clientDisplayName = clientFilter === 'ALL' ? 'Todos los Clientes' : clientFilter;
-                container.appendChild(this.createCoverPageElement(clientDisplayName, filteredRacks, totalPages));
-                currentPage++;
-                
-                // 2. Racks (Summary + Electronics Detail per rack)
-                filteredRacks.forEach((rack, idx) => {
-                    // Summary page
-                    const summaryPage = this.createRackPageElement(rack, idx, false);
-                    const footerSummary = summaryPage.querySelector('footer div:last-child span');
-                    if (footerSummary) footerSummary.innerText = `Bitácora de Racks • Página ${currentPage} de ${totalPages}`;
-                    container.appendChild(summaryPage);
+
+                if (this.state.viewMode === 'plantilla') {
+                    // Print only field templates for technicians
+                    const totalPages = filteredRacks.length;
+                    filteredRacks.forEach((rack, idx) => {
+                        const tplPage = this.createRackPageElement(rack, idx, true);
+                        const footerTpl = tplPage.querySelector('footer div:last-child span');
+                        if (footerTpl) footerTpl.innerText = `Bitácora de Racks • Plantilla de Campo • Página ${idx + 1} de ${totalPages}`;
+                        container.appendChild(tplPage);
+                    });
+                } else {
+                    // Print full maintenance book (Cover + Summary + Electronics Detail)
+                    const totalPages = 1 + (filteredRacks.length * 2);
+                    let currentPage = 1;
+                    
+                    // 1. Cover Page
+                    const clientDisplayName = clientFilter === 'ALL' ? 'Todos los Clientes' : clientFilter;
+                    container.appendChild(this.createCoverPageElement(clientDisplayName, filteredRacks, totalPages));
                     currentPage++;
                     
-                    // Electronics Detail page
-                    const detailPage = this.createElectronicsDetailPageElement(rack, idx);
-                    const footerDetail = detailPage.querySelector('footer div:last-child span');
-                    if (footerDetail) footerDetail.innerText = `Vista Detalle &bull; Página ${currentPage} de ${totalPages}`;
-                    container.appendChild(detailPage);
-                    currentPage++;
-                });
+                    // 2. Racks (Summary + Electronics Detail per rack)
+                    filteredRacks.forEach((rack, idx) => {
+                        // Summary page
+                        const summaryPage = this.createRackPageElement(rack, idx, false);
+                        const footerSummary = summaryPage.querySelector('footer div:last-child span');
+                        if (footerSummary) footerSummary.innerText = `Bitácora de Racks • Página ${currentPage} de ${totalPages}`;
+                        container.appendChild(summaryPage);
+                        currentPage++;
+                        
+                        // Electronics Detail page
+                        const detailPage = this.createElectronicsDetailPageElement(rack, idx);
+                        const footerDetail = detailPage.querySelector('footer div:last-child span');
+                        if (footerDetail) footerDetail.innerText = `Vista Detalle &bull; Página ${currentPage} de ${totalPages}`;
+                        container.appendChild(detailPage);
+                        currentPage++;
+                    });
+                }
             }
 
             renderPreviewSingle(index) {

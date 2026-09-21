@@ -4,6 +4,14 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.11.0 - Separación Inteligente de Exportación PDF según Vista Activa (Marzo 2026)
+
+### Hitos Principales
+- **Exportación en Modo Plantilla de Campo**: Al hacer clic en PDF estando en la **Vista Plantilla**, el sistema genera exclusivamente las **plantillas de campo en blanco** optimizadas para anotaciones manuales del técnico in situ (respetando el filtro de cliente activo y numeración de página independiente).
+- **Exportación en Modo Resumen / Detalle**: Al estar en las vistas de gestión o detalle, se mantiene la exportación del **Libro de Mantenimiento Completo** con Portada, Índice, Resumen y Detalle de Electrónica de Red.
+
+---
+
 ## v0.10.0 - Libro de Mantenimiento Integral por Cliente con Portada e Índice (Marzo 2026)
 
 ### Hitos Principales
