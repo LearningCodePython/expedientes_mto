@@ -176,6 +176,9 @@
                     <button onclick="app.prevRack()" class="bg-white border border-blue-200 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded font-semibold transition flex items-center space-x-1 shadow-sm">
                         <i class="fa-solid fa-arrow-left"></i><span>Anterior</span>
                     </button>
+                    <select id="client-book-filter" onchange="app.setClientFilter(this.value)" class="bg-white border border-blue-300 text-blue-900 rounded px-2.5 py-1 text-xs font-semibold focus:outline-none shadow-sm">
+                        <option value="ALL">📁 Todos los Clientes (Libro Global)</option>
+                    </select>
                     <div class="relative flex items-center">
                         <i class="fa-solid fa-search absolute left-2.5 text-slate-400 text-[10px]"></i>
                         <input type="text" id="rack-search-input" oninput="app.filterRacks(this.value)" placeholder="Buscar cliente / ID..." class="bg-white border border-blue-300 text-blue-900 rounded pl-7 pr-2 py-1 text-xs focus:outline-none shadow-sm w-36">
@@ -325,7 +328,8 @@
                         logoText: "SOP"
                     },
                     racks: [],
-                    searchQuery: ""
+                    searchQuery: "",
+                    selectedClient: "ALL"
                 };
                 this.initAuth();
             }
@@ -821,19 +825,50 @@
                 }
             }
 
+            setClientFilter(client) {
+                this.state.selectedClient = client;
+                this.updateIndicators();
+                if (client !== 'ALL') {
+                    const firstIdx = this.state.racks.findIndex(r => (r.client || 'Sin Cliente') === client);
+                    if (firstIdx !== -1) {
+                        this.state.currentIndex = firstIdx;
+                        this.renderForm();
+                        this.renderPreview();
+                    }
+                }
+            }
+
             updateIndicators() {
                 const rackCountEl = document.getElementById('rack-count');
                 if (rackCountEl) rackCountEl.innerText = this.state.racks.length;
                 document.getElementById('current-rack-indicator').innerText = `${this.state.currentIndex + 1} / ${this.state.racks.length}`;
                 
+                const clientSelect = document.getElementById('client-book-filter');
+                if (clientSelect) {
+                    const currentSelected = this.state.selectedClient || 'ALL';
+                    clientSelect.innerHTML = `<option value="ALL">📁 Todos los Clientes (Libro Global)</option>`;
+                    const uniqueClients = [...new Set(this.state.racks.map(r => r.client || 'Sin Cliente'))];
+                    uniqueClients.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.selected = (c === currentSelected);
+                        opt.text = `🏢 ${c}`;
+                        clientSelect.appendChild(opt);
+                    });
+                }
+
                 const select = document.getElementById('rack-jump-select');
                 if (select) {
                     select.innerHTML = '';
                     const searchQuery = (this.state.searchQuery || '').toLowerCase();
+                    const selectedClientFilter = this.state.selectedClient || 'ALL';
                     
                     const groups = {};
                     this.state.racks.forEach((r, idx) => {
                         const clientName = r.client || 'Sin Cliente / Área';
+                        if (selectedClientFilter !== 'ALL' && clientName !== selectedClientFilter) {
+                            return;
+                        }
                         if (searchQuery) {
                             const matchClient = clientName.toLowerCase().includes(searchQuery);
                             const matchId = (r.id || '').toLowerCase().includes(searchQuery);
@@ -1122,17 +1157,126 @@
                 }
             }
 
+            createCoverPageElement(clientName, racks, totalPages) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border`;
+                
+                let pageLogoHtml = '';
+                if (this.state.company.logoImage) {
+                    pageLogoHtml = `<img src="${this.state.company.logoImage}" class="w-full h-full object-cover">`;
+                } else {
+                    pageLogoHtml = `<span class="text-2xl font-black">${this.state.company.name.substring(0, 3).toUpperCase()}</span>`;
+                }
+
+                let tocRows = '';
+                racks.forEach((r, idx) => {
+                    tocRows += `
+                        <tr class="border-b border-slate-100 text-[11px]">
+                            <td class="py-2 px-3 font-mono font-bold text-slate-800">${idx + 1}.</td>
+                            <td class="py-2 px-3 font-mono font-bold text-blue-900">${r.id}</td>
+                            <td class="py-2 px-3 font-medium text-slate-800">${r.location || 'Sin ubicación'}</td>
+                            <td class="py-2 px-3 text-slate-600">${r.date || '-'}</td>
+                            <td class="py-2 px-3 text-slate-600">${r.technician || '-'}</td>
+                        </tr>
+                    `;
+                });
+
+                pageDiv.innerHTML = `
+                    <div class="flex flex-col h-full justify-between">
+                        <!-- Top Header / Branding -->
+                        <div class="text-center pt-6 pb-4 border-b-2 border-slate-900">
+                            <div class="w-16 h-16 bg-slate-900 text-white mx-auto flex items-center justify-center rounded-2xl overflow-hidden shadow-md mb-3">
+                                ${pageLogoHtml}
+                            </div>
+                            <h1 class="text-lg font-black text-slate-900 uppercase tracking-wider">${this.state.company.name}</h1>
+                            <p class="text-[10px] text-slate-500 mt-0.5">${this.state.company.tagline}</p>
+                        </div>
+
+                        <!-- Book Title & Client Info -->
+                        <div class="py-4 text-center space-y-3">
+                            <div class="inline-block bg-blue-100 text-blue-900 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-1">
+                                Dossier Técnico Oficial &bull; Libro de Mantenimiento
+                            </div>
+                            <h2 class="text-xl font-black text-slate-900 uppercase tracking-wide">LIBRO DE MANTENIMIENTO Y CERTIFICACIÓN DE RACKS</h2>
+                            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 max-w-sm mx-auto shadow-sm text-left space-y-1.5">
+                                <div class="text-[9px] text-slate-400 uppercase font-semibold">Cliente / Área Evaluada:</div>
+                                <div class="text-sm font-black text-blue-900">${clientName === 'ALL' ? 'Todos los Clientes (Dossier Global)' : clientName}</div>
+                                <div class="text-[10px] text-slate-500 pt-2 border-t border-slate-200 flex justify-between">
+                                    <span>Total Racks: <strong>${racks.length}</strong></span>
+                                    <span>Fecha: <strong>${new Date().toISOString().split('T')[0]}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Table of Contents (Índice de Racks) -->
+                        <div class="mb-4 flex-grow">
+                            <h3 class="text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center">
+                                <i class="fa-solid fa-book-bookmark text-blue-600 mr-2"></i> Índice de Racks Incluidos en este Libro (${racks.length})
+                            </h3>
+                            <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm max-h-[220px] overflow-y-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-900 text-white text-[9px] uppercase tracking-wider">
+                                            <th class="py-1.5 px-3">#</th>
+                                            <th class="py-1.5 px-3">ID Rack</th>
+                                            <th class="py-1.5 px-3">Ubicación Física</th>
+                                            <th class="py-1.5 px-3">Fecha</th>
+                                            <th class="py-1.5 px-3">Técnico</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${tocRows}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <footer class="pt-3 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500">
+                            <div>
+                                <span>${this.state.company.name} &bull; Mantenimiento Preventivo</span>
+                            </div>
+                            <div>
+                                <span>Portada &bull; Página 1 de ${totalPages}</span>
+                            </div>
+                        </footer>
+                    </div>
+                `;
+                return pageDiv;
+            }
+
             renderAllRacksForPrint() {
                 const container = document.getElementById('racks-preview-container');
                 container.innerHTML = '';
-                this.state.racks.forEach((rack, idx) => {
-                    if (this.state.viewMode === 'detalle') {
-                        container.appendChild(this.createElectronicsDetailPageElement(rack, idx));
-                    } else if (this.state.viewMode === 'plantilla') {
-                        container.appendChild(this.createRackPageElement(rack, idx, true));
-                    } else {
-                        container.appendChild(this.createRackPageElement(rack, idx, false));
-                    }
+                
+                const clientFilter = this.state.selectedClient || 'ALL';
+                const filteredRacks = clientFilter === 'ALL' 
+                    ? this.state.racks 
+                    : this.state.racks.filter(r => (r.client || 'Sin Cliente') === clientFilter);
+                
+                const totalPages = 1 + (filteredRacks.length * 2);
+                let currentPage = 1;
+                
+                // 1. Cover Page
+                const clientDisplayName = clientFilter === 'ALL' ? 'Todos los Clientes' : clientFilter;
+                container.appendChild(this.createCoverPageElement(clientDisplayName, filteredRacks, totalPages));
+                currentPage++;
+                
+                // 2. Racks (Summary + Electronics Detail per rack)
+                filteredRacks.forEach((rack, idx) => {
+                    // Summary page
+                    const summaryPage = this.createRackPageElement(rack, idx, false);
+                    const footerSummary = summaryPage.querySelector('footer div:last-child span');
+                    if (footerSummary) footerSummary.innerText = `Bitácora de Racks • Página ${currentPage} de ${totalPages}`;
+                    container.appendChild(summaryPage);
+                    currentPage++;
+                    
+                    // Electronics Detail page
+                    const detailPage = this.createElectronicsDetailPageElement(rack, idx);
+                    const footerDetail = detailPage.querySelector('footer div:last-child span');
+                    if (footerDetail) footerDetail.innerText = `Vista Detalle &bull; Página ${currentPage} de ${totalPages}`;
+                    container.appendChild(detailPage);
+                    currentPage++;
                 });
             }
 

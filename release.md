@@ -4,6 +4,16 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.10.0 - Libro de Mantenimiento Integral por Cliente con Portada e Índice (Marzo 2026)
+
+### Hitos Principales
+- **Selector de Libro por Cliente**: Desplegable en la barra superior para alternar entre "Todos los Clientes (Libro Global)" o filtrar por un cliente/área específica.
+- **Portada de Dossier Técnico (Cover Page)**: Generación automática de una página de portada oficial al exportar a PDF, incluyendo branding corporativo, datos del cliente e **Índice de Racks** con ubicaciones, fechas y técnicos asignados.
+- **Dossier Secuencial Completo**: Cada rack seleccionado incluye de forma automatizada tanto su **Página de Resumen / Expediente** como su **Página de Vista Detalle de Electrónica de Red**.
+- **Paginación Dinámica Global**: Numeración exacta de páginas calculada automáticamente en todo el libro (ej. *Página 3 de 7*).
+
+---
+
 ## v0.9.0 - Agrupación por Cliente/Área y Sistema de Búsqueda Rápida (Marzo 2026)
 
 ### Hitos Principales
