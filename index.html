@@ -1182,7 +1182,7 @@
                 });
 
                 pageDiv.innerHTML = `
-                    <div class="flex flex-col h-full justify-between">
+                    <div class="flex flex-col h-full">
                         <!-- Top Header / Branding -->
                         <div class="text-center pt-6 pb-4 border-b-2 border-slate-900">
                             <div class="w-16 h-16 bg-slate-900 text-white mx-auto flex items-center justify-center rounded-2xl overflow-hidden shadow-md mb-3">
@@ -1209,7 +1209,7 @@
                         </div>
 
                         <!-- Table of Contents (Índice de Racks) -->
-                        <div class="mb-4 flex-grow">
+                        <div class="mb-4">
                             <h3 class="text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center">
                                 <i class="fa-solid fa-book-bookmark text-blue-600 mr-2"></i> Índice de Racks Incluidos en este Libro (${racks.length})
                             </h3>
@@ -1232,7 +1232,7 @@
                         </div>
 
                         <!-- Footer -->
-                        <footer class="pt-3 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500">
+                        <footer class="mt-8 pt-3 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500">
                             <div>
                                 <span>${this.state.company.name} &bull; Mantenimiento Preventivo</span>
                             </div>
