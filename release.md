@@ -4,6 +4,13 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.14.0 - Corrección de Proporción 9:16 en Fotografías para PDF (Marzo 2026)
+
+### Hitos Principales
+- **Preservación de Relación de Aspecto 9:16**: Actualización de los estilos de impresión (`@media print`) en `index.html` para los contenedores de Vista Frontal y Vista Trasera, eliminando la altura fija de 100px y restaurando `aspect-ratio: 9 / 16 !important` con altura automática. Esto evita que las imágenes aparezcan recortadas o deformadas en el PDF, manteniéndose idénticas a la visualización en pantalla.
+
+---
+
 ## v0.13.0 - Limpieza de Base de Datos en el Repositorio Git (Marzo 2026)
 
 ### Hitos Principales

@@ -117,13 +117,12 @@
                 max-width: 100% !important;
             }
 
-            /* Altura controlada de las fotos en PDF. */
+            /* Proporción 9:16 exacta para las fotos en PDF, sin recortes. */
             .rack-page .aspect-\[9\/16\] {
-                height: 100px !important;
-                min-height: 100px !important;
-                max-height: 100px !important;
-                aspect-ratio: auto !important;
-                flex: 0 0 100px !important;
+                aspect-ratio: 9 / 16 !important;
+                height: auto !important;
+                max-height: 160px !important;
+                flex: 0 0 auto !important;
             }
 
             /* Compactar el esquema 42U sin alterar su contenido. */
