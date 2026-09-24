@@ -60,11 +60,16 @@ def init_db():
             checklist TEXT,
             units TEXT,
             electronics TEXT,
-            sort_order INTEGER
+            sort_order INTEGER,
+            total_units INTEGER
         )
     """)
     try:
         cursor.execute("ALTER TABLE racks ADD COLUMN electronics TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE racks ADD COLUMN total_units INTEGER")
     except sqlite3.OperationalError:
         pass
     
@@ -228,7 +233,8 @@ def get_data():
             "notes": row["notes"],
             "checklist": json.loads(row["checklist"]) if row["checklist"] else {},
             "units": json.loads(row["units"]) if row["units"] else {},
-            "electronics": json.loads(row["electronics"]) if "electronics" in row.keys() and row["electronics"] else []
+            "electronics": json.loads(row["electronics"]) if "electronics" in row.keys() and row["electronics"] else [],
+            "totalUnits": row["total_units"] if "total_units" in row.keys() and row["total_units"] is not None else 42
         })
         
     conn.close()
@@ -263,8 +269,8 @@ def save_data():
     cursor.execute("DELETE FROM racks")
     for idx, rack in enumerate(racks):
         cursor.execute("""
-            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, electronics, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO racks (rack_id, client, location, date, technician, front_photo, rear_photo, qr_code, notes, checklist, units, electronics, sort_order, total_units)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             rack.get("id"),
             rack.get("client"),
@@ -278,7 +284,8 @@ def save_data():
             json.dumps(rack.get("checklist", {})),
             json.dumps(rack.get("units", {})),
             json.dumps(rack.get("electronics", [])),
-            idx
+            idx,
+            rack.get("totalUnits", 42)
         ))
         
     conn.commit()

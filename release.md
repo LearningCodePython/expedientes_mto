@@ -4,6 +4,15 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.16.0 - Esquema de Rack Dinámico y Selección de Tamaños (9U a 42U) (Marzo 2026)
+
+### Hitos Principales
+- **Selector de Tamaño de Rack Estándar**: Incorporación de un selector en el editor de expedientes para elegir la altura del rack entre medidas estándar corporativas (`9U`, `12U`, `16U`, `22U`, `24U`, `32U`, `36U`, `42U`).
+- **Renderizado Dinámico y Adaptativo**: Distribución flexible de unidades y columnas en la interfaz interactiva y en el visor/PDF de impresión.
+- **Persistencia en Base de Datos**: Actualización del backend Flask y esquema SQLite (`total_units`) para almacenar y recuperar la configuración de unidades de cada rack de forma persistente.
+
+---
+
 ## v0.15.0 - Ampliación de Escala de Fotografías en PDF (Marzo 2026)
 
 ### Hitos Principales

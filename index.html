@@ -733,6 +733,7 @@
                     rearPhoto: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&auto=format&fit=crop&q=60",
                     qrCode: "",
                     notes: "Inspección inicial y revisión de estado general.",
+                    totalUnits: 42,
                     checklist: {
                         cabling: true,
                         power: true,
@@ -1086,8 +1087,9 @@
                     return;
                 }
 
+                const totalUnits = parseInt(rack.totalUnits) || 42;
                 let unitsHtml = '';
-                for (let u = 42; u >= 1; u--) {
+                for (let u = totalUnits; u >= 1; u--) {
                     const val = (rack.units && rack.units[u]) ? rack.units[u] : '';
                     unitsHtml += `
                         <div class="flex items-center space-x-2 text-xs">
@@ -1115,6 +1117,12 @@
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Ubicación Física</label>
                                 <input type="text" value="${rack.location}" oninput="app.updateField('location', this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tamaño del Rack (Unidades)</label>
+                                <select onchange="app.updateField('totalUnits', parseInt(this.value))" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-semibold text-blue-700">
+                                    ${[9, 12, 16, 22, 24, 32, 36, 42].map(sz => `<option value="${sz}" ${totalUnits === sz ? 'selected' : ''}>${sz}U (Estandár)</option>`).join('')}
+                                </select>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
@@ -1197,7 +1205,7 @@
 
                         <!-- Schema -->
                         <div class="border-t border-slate-200 pt-3">
-                            <label class="block text-xs font-semibold text-slate-600 mb-2">Esquema del Rack (42U)</label>
+                            <label class="block text-xs font-semibold text-slate-600 mb-2">Esquema del Rack (${totalUnits}U)</label>
                             <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 max-h-60 overflow-y-auto space-y-1">
                                 ${unitsHtml}
                             </div>
@@ -1484,11 +1492,23 @@
                 const pageDiv = document.createElement('div');
                 pageDiv.className = `rack-page bg-white w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between relative box-border ${index === this.state.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
                 
-                let schemaHtml = '<div class="grid grid-cols-6 gap-1">';
-                for (let col = 0; col < 6; col++) {
+                const totalUnits = parseInt(rack.totalUnits) || 42;
+                let numCols = 6;
+                if (totalUnits <= 12) numCols = 2;
+                else if (totalUnits <= 24) numCols = 3;
+                else if (totalUnits <= 36) numCols = 4;
+                else numCols = 6;
+
+                let schemaHtml = `<div class="grid grid-cols-${numCols} gap-1">`;
+                const unitsPerCol = Math.ceil(totalUnits / numCols);
+                let currentTop = totalUnits;
+
+                for (let col = 0; col < numCols; col++) {
                     schemaHtml += '<div class="space-y-1">';
-                    const startU = 42 - (col * 7);
-                    const endU = startU - 6;
+                    const startU = currentTop;
+                    const endU = Math.max(1, currentTop - unitsPerCol + 1);
+                    currentTop = endU - 1;
+
                     for (let u = startU; u >= endU; u--) {
                         const equipment = rack.units && rack.units[u] ? rack.units[u] : '';
                         const hasEq = equipment.trim() !== '';
@@ -1503,6 +1523,7 @@
                         `;
                     }
                     schemaHtml += '</div>';
+                    if (currentTop < 1) break;
                 }
                 schemaHtml += '</div>';
 
@@ -1656,9 +1677,9 @@
                             </div>
                         </div>
 
-                        <!-- Bottom Section: 42U Rack Schema -->
+                        <!-- Bottom Section: Rack Schema -->
                         <div class="mb-3">
-                            <span class="text-[10px] font-bold text-slate-700 block mb-1"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema de Rack 42U</span>
+                            <span class="text-[10px] font-bold text-slate-700 block mb-1"><i class="fa-solid fa-server mr-1 text-blue-600"></i> Esquema de Rack (${totalUnits}U)</span>
                             <div class="bg-white border border-slate-300 rounded-lg p-2 shadow-inner">
                                 ${schemaHtml}
                             </div>
