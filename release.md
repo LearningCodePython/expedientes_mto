@@ -4,6 +4,14 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.15.0 - Ampliación de Escala de Fotografías en PDF (Marzo 2026)
+
+### Hitos Principales
+- **Aumento de Altura Máxima de Imágenes en PDF**: Actualización de los estilos de impresión en `index.html` para incrementar la `max-height` de las fotografías de Vista Frontal y Vista Trasera a `220px` (Escala 3), manteniendo estrictamente la relación de aspecto `9:16` para mayor legibilidad de los expedientes en papel y exportaciones PDF.
+- **Actualización de Guías de Agentes**: Mejora y compactación del fichero `AGENTS.md` con directrices precisas y de alta señal para futuras sesiones de OpenCode.
+
+---
+
 ## v0.14.0 - Corrección de Proporción 9:16 en Fotografías para PDF (Marzo 2026)
 
 ### Hitos Principales
