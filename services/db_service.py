@@ -36,6 +36,16 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "username" not in session:
+            return jsonify({"error": "No autorizado. Inicie sesión."}), 401
+        if session.get("role") != "admin":
+            return jsonify({"error": "Acceso denegado. Se requieren privilegios de Administrador."}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 def init_db():
     is_postgres = DB_TYPE in ("postgres", "postgresql") or (DATABASE_URL and DATABASE_URL.startswith("postgres"))
     conn = get_db_connection()
@@ -46,13 +56,19 @@ def init_db():
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         username VARCHAR(255) PRIMARY KEY,
-                        password TEXT
+                        password TEXT,
+                        role VARCHAR(50) DEFAULT 'admin'
                     )
                 """)
+                try:
+                    cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'admin'")
+                except Exception:
+                    pass
+
                 cursor.execute("SELECT COUNT(*) FROM users")
                 if cursor.fetchone()[0] == 0:
                     hashed_pw = generate_password_hash("admin123")
-                    cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", ("admin", hashed_pw))
+                    cursor.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)", ("admin", hashed_pw, "admin"))
 
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS company (
@@ -144,13 +160,19 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 username TEXT PRIMARY KEY,
-                password TEXT
+                password TEXT,
+                role TEXT DEFAULT 'admin'
             )
         """)
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'admin'")
+        except sqlite3.OperationalError:
+            pass
+
         cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
             hashed_pw = generate_password_hash("admin123")
-            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("admin", hashed_pw))
+            cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ("admin", hashed_pw, "admin"))
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS company (

@@ -3,7 +3,7 @@ import sqlite3
 import json
 from flask import Blueprint, request, jsonify, send_from_directory
 import services.db_service as db
-from services.db_service import login_required
+from services.db_service import login_required, admin_required
 
 api_bp = Blueprint("api", __name__)
 
@@ -51,7 +51,7 @@ def get_data():
     return jsonify({"company": company, "racks": racks})
 
 @api_bp.route("/api/data", methods=["POST"])
-@login_required
+@admin_required
 def save_data():
     req = request.json
     if not req:
@@ -103,7 +103,7 @@ def save_data():
     return jsonify({"status": "success"})
 
 @api_bp.route("/upload", methods=["POST"])
-@login_required
+@admin_required
 def upload_file():
     rack_id = request.form.get("rack_id") or (request.json and request.json.get("rack_id"))
     file_type = request.form.get("type") or "qr"

@@ -47,6 +47,7 @@ def test_login_success(client):
     data = response.get_json()
     assert data["status"] == "success"
     assert data["username"] == "admin"
+    assert data["role"] == "admin"
 
 def test_login_failure(client):
     response = client.post("/api/login", json={
@@ -123,3 +124,52 @@ def test_change_password(client):
         "password": "newsecure123"
     })
     assert res_new.status_code == 200
+
+def test_admin_create_and_use_readonly_user(client):
+    # Login as admin
+    client.post("/api/login", json={
+        "username": "admin",
+        "password": "admin123"
+    })
+    
+    # Create read-only user
+    res = client.post("/api/users", json={
+        "username": "viewer",
+        "password": "viewer123",
+        "role": "readonly"
+    })
+    assert res.status_code == 200
+    assert res.get_json()["status"] == "success"
+    
+    # List users
+    users_res = client.get("/api/users")
+    assert users_res.status_code == 200
+    users_list = users_res.get_json()["users"]
+    assert any(u["username"] == "viewer" and u["role"] == "readonly" for u in users_list)
+    
+    # Logout admin
+    client.post("/api/logout")
+    
+    # Login as viewer
+    viewer_login = client.post("/api/login", json={
+        "username": "viewer",
+        "password": "viewer123"
+    })
+    assert viewer_login.status_code == 200
+    assert viewer_login.get_json()["role"] == "readonly"
+    
+    # Viewer can read data
+    get_res = client.get("/api/data")
+    assert get_res.status_code == 200
+    
+    # Viewer cannot save data (should be 403 Forbidden)
+    save_res = client.post("/api/data", json=get_res.get_json())
+    assert save_res.status_code == 403
+    
+    # Viewer cannot create users (should be 403 Forbidden)
+    create_res = client.post("/api/users", json={
+        "username": "hacker",
+        "password": "password",
+        "role": "admin"
+    })
+    assert create_res.status_code == 403
