@@ -4,6 +4,32 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 
 ---
 
+## v0.19.0 - Abstracción de Base de Datos Configurable (SQLite / PostgreSQL) (Marzo 2026)
+
+### Hitos Principales
+- **Capa de Abstracción de Base de Datos**: Implementación de `get_db_connection()` en `services/db_service.py` para permitir la selección dinámica del motor de base de datos mediante variables de entorno (`DB_TYPE`, `DATABASE_URL`, `DB_PATH`).
+- **Soporte Multi-motor**: Mantenimiento de SQLite como motor por defecto para desarrollo local, pruebas con `pytest` y contenedores Docker sencillos, añadiendo soporte estructurado para PostgreSQL en despliegues distribuidos escalables.
+- **Validación y Pruebas**: Verificación completa de todos los tests automatizados (`pytest`) con éxito absoluto.
+
+---
+
+## v0.18.0 - Modularización del Backend con Flask Blueprints (Marzo 2026)
+
+### Hitos Principales
+- **Modularización del Backend**: Refactorización de `app.py` separando componentes lógicos y rutas en módulos independientes (`services/db_service.py`, `routes/auth_routes.py`, `routes/api_routes.py`) utilizando Flask Blueprints.
+- **Mantenibilidad y Escalabilidad**: Organización del código manteniendo intacta la API pública, el punto de entrada y la persistencia en SQLite.
+- **Validación con Pytest**: Ejecución exitosa de la suite de pruebas automatizadas asegurando cero regresiones.
+
+---
+
+## v0.17.0 - Suite de Pruebas Automatizadas con Pytest (Marzo 2026)
+
+### Hitos Principales
+- **Implementación de Tests Automatizados (`pytest`)**: Creación de la estructura de pruebas en `tests/test_app.py` cubriendo endpoints críticos de autenticación (`/api/check-auth`, `/api/login`, `/api/logout`, `/api/change-password`) y gestión de datos de expedientes (`/api/data`).
+- **Verificación de Seguridad y Robustez**: Configuración de base de datos temporal aislada para pruebas unitarias e integración de `pytest` en el flujo de desarrollo del proyecto.
+
+---
+
 ## v0.16.0 - Esquema de Rack Dinámico y Selección de Tamaños (9U a 42U) (Marzo 2026)
 
 ### Hitos Principales
@@ -157,4 +183,4 @@ Este documento detalla la evolución, hitos y crecimiento del proyecto **Plantil
 5. **Exportación a PDF**:
    - Estilos CSS `@media print` optimizados para formato A4 con saltos de página por rack.
 6. **Puerto de Ejecución Asignado**:
-   - Servidor configurado para arrancar en el puerto `5001` (`python3 app.py`).
+   - Servidor configurado para arrankar en el puerto `5001` (`python3 app.py`).
